@@ -31,7 +31,7 @@
 				<RowDefinition
 					Height="64"/>
 			</Grid.RowDefinitions>
-			<AppBar>
+			<AppBar >
 				<RelativePanel>
 					<TextBlock
 						RelativePanel.AlignLeftWithPanel="True"
@@ -45,7 +45,8 @@
 						RelativePanel.AlignBottomWithPanel="True"
 						FontSize="{Binding Path=FontSize, Converter={StaticResource EnumConverter}, Mode=OneWay}"
 						Icon="Setting"
-						Label="Setting"/>
+						Label="Setting"
+						Command="{Binding Path=NavigateToSetting}"/>
 				</RelativePanel>
 			</AppBar>
 			<RelativePanel

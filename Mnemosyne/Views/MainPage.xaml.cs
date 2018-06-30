@@ -12,13 +12,6 @@ namespace Mnemosyne.Views
 		public MainPage()
         {
 			InitializeComponent();
-
-			par.Click += Par_Click;
         }
-
-		private void Par_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
-		{
-			Frame.Navigate(typeof(ParameterPage), DataContext);
-		}
 	}
 }

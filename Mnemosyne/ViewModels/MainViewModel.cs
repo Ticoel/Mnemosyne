@@ -1,4 +1,5 @@
 ﻿using Mnemosyne.Helpers;
+using Mnemosyne.Views;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -154,6 +155,7 @@ namespace Mnemosyne.ViewModels
 		public RelayAction SelectDestinationAction { get; }
 		public RelayAction StartAction { get; }
 		public RelayAction StopAction { get; }
+		public RelayAction NavigateToSetting { get; }
 
 		public bool IsRunning
 		{
@@ -214,6 +216,14 @@ namespace Mnemosyne.ViewModels
 			});
 
 			StopAction = new RelayAction((parameter) => { Stop(); }, (parameter) => { return IsRunning; });
+
+			NavigateToSetting = new RelayAction((parameter) =>
+			{
+				((Frame)Window.Current.Content).Navigate(typeof(SettingPage));
+			}, (parameter) =>
+			{
+				return true;
+			});
 		}
 
 		public MainViewModel(StorageFolder source, StorageFolder destination) : this()

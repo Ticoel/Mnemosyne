@@ -17,26 +17,20 @@ namespace Mnemosyne.ViewModels
 		public List<FontSize> FontSizes
 			=> Enum.GetValues(typeof(FontSize)).Cast<FontSize>().ToList();
 
-		public RelayAction RestoreDefaultsAction
-		{
-			get
-			{
-				return restoreDefaultsAction;
-			}
-			set
-			{
-				if (value != restoreDefaultsAction)
-				{
-					restoreDefaultsAction = value;
-					Notify("SaveAction");
-				}
-			}
-		}
+		public RelayAction ReturnPreviousPage { get; }
 
-		private RelayAction restoreDefaultsAction;
+		public RelayAction RestoreDefaultsAction { get; }
 
 		public SettingViewModel()
 		{
+			ReturnPreviousPage = new RelayAction((parameter) =>
+			{
+				((Frame)Window.Current.Content).GoBack();
+			}, (parameter) =>
+			{
+				return true;
+			});
+
 			RestoreDefaultsAction = new RelayAction((parameter) =>
 			{
 				Settings.RestoreDefaults();;
