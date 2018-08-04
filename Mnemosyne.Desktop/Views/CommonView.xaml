@@ -1,0 +1,395 @@
+﻿<ResourceDictionary
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:system="clr-namespace:System;assembly=mscorlib"
+	xmlns:helpers="clr-namespace:Mnemosyne.Desktop.Helpers"
+	x:Class="Mnemosyne.Desktop.Views.CommonView">
+	<helpers:BoolToButtonNameConverter x:Key="BoolToButtonNameConverter"/>
+	<helpers:InverseBoolConverter x:Key="InverseBoolConverter"/>
+	<helpers:PathToFileNameConverter x:Key="PathToFileNameConverter"/>
+	<helpers:DateTimeToStringConverter x:Key="DateTimeToStringConverter"/>
+	<helpers:OctetToMebioctetConverter x:Key="OctetToMebioctetConverter"/>
+	<helpers:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter"/>
+	<helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+	<system:Double x:Key="PrimaryFontSize">24</system:Double>
+	<Thickness x:Key="PrimaryBorderSize">3</Thickness>
+	<SolidColorBrush Color="White" x:Key="PrimaryFontColor"/>
+	<SolidColorBrush Color="Black" x:Key="WindowBackgroundColor"/>
+	<SolidColorBrush Color="Gray" x:Key="ActiveBackgroundColor"/>
+	<SolidColorBrush Color="LightGray" x:Key="DisabledBackgroundColor"/>
+	<SolidColorBrush Color="White" x:Key="ActiveColor"/>
+	<SolidColorBrush Color="Green" x:Key="CheckedColor"/>
+	<SolidColorBrush Color="Red" x:Key="UncheckedColor"/>
+	<Style TargetType="TextBlock" x:Key="PrimaryTextBlockStyle">
+		<Setter Property="FontSize" Value="{StaticResource PrimaryFontSize}"/>
+		<Setter Property="TextWrapping" Value="Wrap"/>
+		<Setter Property="Foreground" Value="{StaticResource PrimaryFontColor}"/>
+	</Style>
+	<Style TargetType="TextBox" x:Key="PrimaryTextBox">
+		<Setter Property="FontSize" Value="{StaticResource PrimaryFontSize}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor}"/>
+		<Setter Property="CaretBrush" Value="{StaticResource ActiveColor}"/>
+		<Setter Property="Padding" Value="10"/>
+		<Setter Property="TextWrapping" Value="Wrap"/>
+		<Setter Property="Background" Value="{StaticResource ActiveBackgroundColor}"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="TextBox">
+					<Grid
+						Name="Grid"
+						Background="Transparent">
+						<ScrollViewer
+							Name="PART_ContentHost"/>
+						<VisualStateManager.VisualStateGroups>
+							<VisualStateGroup
+								Name="CommonStates">
+								<VisualState
+									Name="Normal">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"
+											Duration="0"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState
+									Name="Disabled">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"
+											Duration="0"/>
+									</Storyboard>
+								</VisualState>
+							</VisualStateGroup>
+						</VisualStateManager.VisualStateGroups>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="Button" x:Key="PrimaryButtonStyle">
+		<Setter
+			Property="Template">
+			<Setter.Value>
+				<ControlTemplate
+					TargetType="Button">
+					<Grid
+						Name="Grid"
+						Background="Transparent">
+						<Border>
+							<ContentPresenter
+								HorizontalAlignment="Center"
+								VerticalAlignment="Center"/>
+						</Border>
+						<VisualStateManager.VisualStateGroups>
+							<VisualStateGroup
+								Name="CommonStates">
+								<VisualState
+									Name="Normal">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState
+									Name="Disabled">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState
+									Name="Pressed">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="Orange"/>
+									</Storyboard>
+								</VisualState>
+							</VisualStateGroup>
+						</VisualStateManager.VisualStateGroups>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter
+			Property="ContentTemplate">
+			<Setter.Value>
+				<DataTemplate>
+					<TextBlock
+						Padding="5"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="{Binding}"/>
+				</DataTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="ToggleButton" x:Key="PrimaryToggleButtonStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToggleButton">
+					<Border
+						Background="Transparent">
+						<Grid>
+							<ContentPresenter/>
+						</Grid>
+					</Border>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ContentTemplate">
+			<Setter.Value>
+				<DataTemplate>
+					<Border>
+						<Grid>
+							<Path
+								Margin="10"
+								Width="30"
+								Height="15"
+								Stroke="{StaticResource ActiveColor}"
+								StrokeThickness="3"
+								StrokeStartLineCap="Round"
+								StrokeLineJoin="Round"
+								StrokeEndLineCap="Round"
+								Data="m1.5,1.5 13.5,12 l13,-12"/>
+						</Grid>
+					</Border>
+				</DataTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="ToggleButton" x:Key="SecondaryToggleButtonStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToggleButton">
+					<Grid
+						Name="Grid"
+						Background="Transparent">
+						<ContentPresenter
+							Margin="10"/>
+						<VisualStateManager.VisualStateGroups>
+							<VisualStateGroup Name="CommonStates">
+								<VisualState Name="Normal">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"
+											Duration="0"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState Name="Disabled">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"
+											Duration="0"/>
+									</Storyboard>
+								</VisualState>
+							</VisualStateGroup>
+						</VisualStateManager.VisualStateGroups>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ContentTemplate">
+			<Setter.Value>
+				<DataTemplate>
+					<Grid>
+						<TextBlock
+							TextWrapping="Wrap"
+							Style="{StaticResource PrimaryTextBlockStyle}"
+							Text="{Binding}"/>
+					</Grid>
+				</DataTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="ProgressBar" x:Key="PrimaryProgressBarStyle">
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor}"/>
+		<Setter Property="Background" Value="{StaticResource ActiveBackgroundColor}"/>
+	</Style>
+	<Style TargetType="ListViewItem" x:Key="PrimaryListViewItemStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ListViewItem">
+					<Grid
+						Name="Grid"
+						Background="Transparent">
+						<ContentPresenter/>
+						<VisualStateManager.VisualStateGroups>
+							<VisualStateGroup Name="CommonStates">
+								<VisualState Name="Normal">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState Name="Selected">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"/>
+									</Storyboard>
+								</VisualState>
+							</VisualStateGroup>
+						</VisualStateManager.VisualStateGroups>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ContentTemplate">
+			<Setter.Value>
+				<DataTemplate>
+					<TextBlock
+						Padding="10"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="{Binding Path=Name}"/>
+				</DataTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="ListView" x:Key="PrimaryListViewStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ListView">
+					<ScrollViewer>
+						<ItemsPresenter/>
+					</ScrollViewer>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ItemContainerStyle" Value="{StaticResource PrimaryListViewItemStyle}"/>
+	</Style>
+	<Style TargetType="ComboBox" x:Key="ComboBoxStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ComboBox">
+					<Grid
+						Name="Grid">
+						<Border
+							BorderBrush="{StaticResource ActiveColor}"
+							BorderThickness="{StaticResource PrimaryBorderSize}">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition/>
+									<ColumnDefinition Width="auto"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock
+									Grid.Column="0"
+									HorizontalAlignment="Center"
+									VerticalAlignment="Center"
+									Margin="10"
+									Style="{StaticResource PrimaryTextBlockStyle}"
+									Text="{Binding ElementName=ListView, Path=SelectedItem.Name, Mode=OneWay}"/>
+								<ToggleButton
+									Name="ToggleButton"
+									Grid.Column="1"
+									HorizontalContentAlignment="Center"
+									VerticalContentAlignment="Center"
+									IsChecked="{Binding ElementName=Popup, Path=IsOpen, Mode=TwoWay}"
+									Style="{StaticResource PrimaryToggleButtonStyle}"
+									GotFocus="ToggleButton_GotFocus"/>
+								<Popup
+									Name="Popup"
+									Placement="Center"
+									HorizontalOffset="0"
+									VerticalOffset="0"
+									Width="{Binding ElementName=Grid, Path=ActualWidth}"
+									IsOpen="{Binding ElementName=ToggleButton, Path=IsChecked, Mode=OneWay}"
+									StaysOpen="False">
+									<Border
+										BorderThickness="{StaticResource PrimaryBorderSize}"
+										BorderBrush="{StaticResource ActiveColor}">
+										<ListView
+											Name="ListView"
+											ItemsSource="{TemplateBinding ItemsSource}"
+											SelectedItem="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=SelectedItem, Mode=TwoWay}"
+											Style="{StaticResource PrimaryListViewStyle}"
+											GotFocus="ListView_GotFocus"
+											SelectionChanged="ListView_SelectionChanged"/>
+									</Border>
+								</Popup>
+							</Grid>
+						</Border>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="ListViewItem" x:Key="SecondaryListViewItemStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ListViewItem">
+					<Grid
+						Name="Grid"
+						Background="Transparent">
+						<ContentPresenter/>
+						<VisualStateManager.VisualStateGroups>
+							<VisualStateGroup Name="CommonStates">
+								<VisualState Name="Normal">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState Name="Selected">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											Duration="0"
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"/>
+									</Storyboard>
+								</VisualState>
+							</VisualStateGroup>
+						</VisualStateManager.VisualStateGroups>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ContentTemplate">
+			<Setter.Value>
+				<DataTemplate>
+					<TextBlock
+						Padding="10"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="{Binding}"/>
+				</DataTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style TargetType="ListView" x:Key="SecondaryListViewStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate>
+					<ScrollViewer>
+						<ItemsPresenter/>
+					</ScrollViewer>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ItemContainerStyle" Value="{StaticResource SecondaryListViewItemStyle}"/>
+	</Style>
+</ResourceDictionary>

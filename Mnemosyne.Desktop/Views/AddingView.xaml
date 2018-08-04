@@ -1,0 +1,167 @@
+﻿<Window x:Class="Mnemosyne.Desktop.Views.ProfileAddingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Mnemosyne.Desktop.Views"
+        xmlns:views="clr-namespace:Mnemosyne.Desktop.Views"
+		xmlns:viewmodels="clr-namespace:Mnemosyne.Desktop.ViewModels"
+        mc:Ignorable="d"
+        Title="{Binding Path=Profil.Name}"
+		Background="Black">
+	<Window.DataContext>
+		<viewmodels:AddingViewModel/>
+	</Window.DataContext>
+	<ScrollViewer>
+		<StackPanel>
+			<!--Name-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Name"/>
+				<TextBox
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBox}"
+					Text="{Binding Path=ProfilName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+			</WrapPanel>
+			<!--BufferLength-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Buffer Length"/>
+				<TextBox
+					Grid.Column="1"
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBox}"
+					Text="{Binding Path=Profil.BufferLength, Mode=TwoWay}"
+					TextChanged="TextBox_TextChanged"/>
+			</WrapPanel>
+			<!--Creation Time-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Creation Time"/>
+				<ToggleButton
+					Grid.Column="1"
+					Margin="10"
+					VerticalAlignment="Center"
+					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
+					IsChecked="{Binding Path=Profil.CreationTime, Mode=TwoWay}"
+					Style="{StaticResource SecondaryToggleButtonStyle}"/>
+			</WrapPanel>
+			<!--Last Acces Time-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Last Acces Time"/>
+				<ToggleButton
+					Grid.Column="1"
+					Margin="10"
+					VerticalAlignment="Center"
+					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
+					IsChecked="{Binding Path=Profil.LastAccessTime, Mode=TwoWay}"
+					Style="{StaticResource SecondaryToggleButtonStyle}"/>
+			</WrapPanel>
+			<!--Last Write Time-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Last Write Time"/>
+				<ToggleButton
+					Grid.Column="1"
+					Margin="10"
+					VerticalAlignment="Center"
+					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
+					IsChecked="{Binding Path=Profil.LastWriteTime, Mode=TwoWay}"
+					Style="{StaticResource SecondaryToggleButtonStyle}"/>
+			</WrapPanel>
+			<!--Attributes-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Attributes"/>
+				<ToggleButton
+					Grid.Column="1"
+					Margin="10"
+					VerticalAlignment="Center"
+					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
+					IsChecked="{Binding Path=Profil.Attributes, Mode=TwoWay}"
+					Style="{StaticResource SecondaryToggleButtonStyle}"/>
+			</WrapPanel>
+			<!--Access Control-->
+			<WrapPanel>
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Attributes"/>
+				<ToggleButton
+					Grid.Column="1"
+					Margin="10"
+					VerticalAlignment="Center"
+					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
+					IsChecked="{Binding Path=Profil.AccessControl, Mode=TwoWay}"
+					Style="{StaticResource SecondaryToggleButtonStyle}"/>
+			</WrapPanel>
+			<!--Directories Excluded-->
+			<WrapPanel
+				Orientation="Vertical">
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Directories Excluded"/>
+				<ListView
+					Margin="10"
+					VerticalAlignment="Center"
+					ItemsSource="{Binding Path=Profil.DirectoriesExcluded, Mode=OneWay}"/>
+				<WrapPanel>
+					<Button
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="Add"/>
+					<Button
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="Remove"/>
+				</WrapPanel>
+			</WrapPanel>
+			<!--Files Excluded-->
+			<WrapPanel
+				Orientation="Vertical">
+				<TextBlock
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource PrimaryTextBlockStyle}"
+					Text="Directories Excluded"/>
+				<ListView
+					Margin="10"
+					VerticalAlignment="Center"
+					Style="{StaticResource SecondaryListViewStyle}"
+					ItemsSource="{Binding Path=Profil.FilesExcluded, Mode=OneWay}"/>
+			</WrapPanel>
+			<!--Create Button-->
+			<WrapPanel
+				Orientation="Horizontal">
+				<Button
+					Margin="10"
+					Style="{StaticResource PrimaryButtonStyle}"
+					Content="Create"
+					Command="{Binding CMDCreate, Mode=OneTime}"
+					Click="Button_Click"/>
+			</WrapPanel>
+		</StackPanel>
+	</ScrollViewer>
+</Window>

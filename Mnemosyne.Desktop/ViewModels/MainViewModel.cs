@@ -1,7 +1,9 @@
 ﻿using Mnemosyne.Desktop.Helpers;
+using Mnemosyne.Desktop.Models;
 using Mnemosyne.Desktop.Views;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,8 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Threading;
+using System.Xml.Serialization;
 
-namespace Mnemosyne.ViewModels
+namespace Mnemosyne.Desktop.ViewModels
 {
 	public sealed class MainViewModel : CommonViewModel
 	{
@@ -113,9 +116,9 @@ namespace Mnemosyne.ViewModels
 					Notify(nameof(IsRunning));
 					System.Windows.Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)(() =>
 					{
-						CMDNavigateToSetting.Notify();
 						CMDSelectSource.Notify();
 						CMDSelectTarget.Notify();
+						CMDViewProfil.Notify();
 						CMDStart.Notify();
 						CMDCancel.Notify();
 					}));
@@ -201,9 +204,33 @@ namespace Mnemosyne.ViewModels
 			}
 		}
 
+		public ObservableCollection<Profile> Profils { get; }
+		public ObservableCollection<string> ProfilsPaths { get; }
+
+		public Profile CurrentProfil
+		{
+			get
+			{
+				return currentProfil;
+			}
+			set
+			{
+				if (value != currentProfil)
+				{
+					currentProfil = value;
+					Notify(nameof(CurrentProfil));
+					System.Windows.Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)(() =>
+					{
+						CMDViewProfil.Notify();
+					}));
+				}
+			}
+		}
+
 		public RelayAction CMDSelectSource { get; }
 		public RelayAction CMDSelectTarget { get; }
-		public RelayAction CMDNavigateToSetting { get; }
+		public RelayAction CMDViewProfil { get; }
+		public RelayAction CMDAdd { get; }
 		public RelayAction CMDStart { get; }
 		public RelayAction CMDCancel { get; }
 
@@ -226,12 +253,17 @@ namespace Mnemosyne.ViewModels
 		private long copiedByte;
 		private long byteToCopy;
 		private DateTime estimateEndTime;
+		private Profile currentProfil;
 
 		public MainViewModel()
 		{
+			Profils = new ObservableCollection<Profile>();
+			ProfilsPaths = new ObservableCollection<string>();
+
 			CMDSelectSource = new RelayAction((param) => SelectSource(), (param) => !IsRunning);
 			CMDSelectTarget = new RelayAction((param) => SelectTarget(), (param) => !IsRunning && SourcePath != null);
-			CMDNavigateToSetting = new RelayAction((param) => { var a = new SettingWindow(); a.Show(); }, (param) => !IsRunning);
+			CMDViewProfil = new RelayAction((param) => { OpenProfilWindow(); }, (param) => !IsRunning && CurrentProfil != null);
+			CMDAdd = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => true);
 			CMDStart = new RelayAction(async (param) => { await Start(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null);
 			CMDCancel = new RelayAction((param) => { Cancel(); }, (param) => IsRunning);
 
@@ -276,16 +308,91 @@ namespace Mnemosyne.ViewModels
 				await Count(childFolder);
 		}
 
-		private async Task CopyFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
+		public void GetProfils()
+		{
+			var serializer = new XmlSerializer(typeof(Profile));
+
+			var directory = new DirectoryInfo(Path.Combine(Application.LocalUserAppDataPath, "Profiles"));
+
+			if (!directory.Exists)
+				directory.Create();
+
+			var defaultProfil = from profil in Profils
+								where profil.Name == "default"
+								select profil;
+
+			if (defaultProfil.Count() < 1)
+			{
+				Profils.Add(Profile.CreateDefault(false));
+			}
+
+			var files = directory.EnumerateFiles();
+
+			foreach (var file in files)
+			{
+				var profils = from p in Profils
+							  where p.FileInfo != null
+							  where p.FileInfo.FullName == file.FullName
+							  select p;
+
+				if (profils.Count() < 1)
+				{
+					using (var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+					{
+						var profil = (Profile)serializer.Deserialize(stream);
+						profil.FileInfo = file;
+						Profils.Add(profil);
+					}
+				}
+			}
+
+			List<Profile> toDelete = new List<Profile>();
+
+			foreach (var profil in Profils)
+			{
+				if (profil.FileInfo != null &&
+					!File.Exists(profil.FileInfo.FullName))
+				{
+					toDelete.Add(profil);
+				}
+			}
+
+			foreach (var profil in toDelete)
+			{
+				if (profil == CurrentProfil)
+					CurrentProfil = null;
+				Profils.Remove(profil);
+			}
+
+			if (CurrentProfil == null)
+			{
+				CurrentProfil = defaultProfil.First();
+			}
+		}
+
+		private void OpenProfilWindow()
+		{
+			var win = new ProfilWindow(CurrentProfil);
+			win.Closed += (sender, e) => { GetProfils(); };
+			win.ShowDialog();
+		}
+
+		private void OpenAddingProfileWindow()
+		{
+			var win = new ProfileAddingWindow();
+			win.ShowDialog();
+		}
+
+		private void CopyFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
 		{
 			try
 			{
-				for (int i = 0; i < sourceFileStream.Length; i += BufferLength)
+				for (int i = 0; i < sourceFileStream.Length; i += CurrentProfil.BufferLength)
 				{
 					cancellationToken.ThrowIfCancellationRequested();
 
 					var buffer = new byte[sourceFileStream.Length];
-					var count = (int)(sourceFileStream.Length - i > BufferLength ? BufferLength : sourceFileStream.Length - i);
+					var count = (int)(sourceFileStream.Length - i > CurrentProfil.BufferLength ? CurrentProfil.BufferLength : sourceFileStream.Length - i);
 
 					sourceFileStream.Read(buffer, 0, count);
 					targetFileStream.Write(buffer, 0, count);
@@ -293,7 +400,7 @@ namespace Mnemosyne.ViewModels
 					copiedByte += count;
 				}
 			}
-			catch (OperationCanceledException e)
+			catch (OperationCanceledException)
 			{
 				throw  new OperationCanceledException(cancellationToken);
 			}
@@ -306,17 +413,17 @@ namespace Mnemosyne.ViewModels
 			}
 		}
 
-		private async Task UpdateFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
+		private void UpdateFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
 		{
 			try
 			{
-				for (int i = 0; i < sourceFileStream.Length; i += BufferLength)
+				for (int i = 0; i < sourceFileStream.Length; i += CurrentProfil.BufferLength)
 				{
 					cancellationToken.ThrowIfCancellationRequested();
 
-					var sourceBuffer = new byte[BufferLength];
-					var targetBuffer = new byte[BufferLength];
-					var count = (int)(sourceFileStream.Length - i > BufferLength ? BufferLength : sourceFileStream.Length - i);
+					var sourceBuffer = new byte[CurrentProfil.BufferLength];
+					var targetBuffer = new byte[CurrentProfil.BufferLength];
+					var count = (int)(sourceFileStream.Length - i > CurrentProfil.BufferLength ? CurrentProfil.BufferLength : sourceFileStream.Length - i);
 
 					sourceFileStream.Seek(i, SeekOrigin.Begin);
 					targetFileStream.Seek(i, SeekOrigin.Begin);
@@ -333,7 +440,7 @@ namespace Mnemosyne.ViewModels
 					copiedByte += count;
 				}
 			}
-			catch (OperationCanceledException e)
+			catch (OperationCanceledException)
 			{
 				throw new OperationCanceledException(cancellationToken);
 			}
@@ -369,7 +476,7 @@ namespace Mnemosyne.ViewModels
 
 							try
 							{
-								await UpdateFile(sourceChildFile.OpenRead(), targetChildFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite), cancellationToken);
+								UpdateFile(sourceChildFile.OpenRead(), targetChildFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite), cancellationToken);
 							}
 							catch (OperationCanceledException)
 							{
@@ -388,7 +495,7 @@ namespace Mnemosyne.ViewModels
 								targetChildFileStream.SetLength(sourceChildFile.Length);
 								targetChildFileStream.Flush();
 
-								await UpdateFile(sourceChildFile.OpenRead(), targetChildFileStream, cancellationToken);
+								UpdateFile(sourceChildFile.OpenRead(), targetChildFileStream, cancellationToken);
 							}
 							catch (OperationCanceledException)
 							{
@@ -403,7 +510,7 @@ namespace Mnemosyne.ViewModels
 
 						try
 						{
-							await CopyFile(sourceChildFile.OpenRead(), targetChildFile.Open(FileMode.Create, FileAccess.Write, FileShare.Write), cancellationToken);
+							CopyFile(sourceChildFile.OpenRead(), targetChildFile.Open(FileMode.Create, FileAccess.Write, FileShare.Write), cancellationToken);
 						}
 						catch (OperationCanceledException)
 						{
@@ -412,18 +519,23 @@ namespace Mnemosyne.ViewModels
 						}
 					}
 
-					if (UpdateCreationTime)
+					if (CurrentProfil.CreationTime)
 						targetChildFile.CreationTime = sourceChildFile.CreationTime;
 
-					targetChildFile.LastAccessTime = sourceChildFile.LastAccessTime;
+					if (CurrentProfil.LastAccessTime)
+						targetChildFile.LastAccessTime = sourceChildFile.LastAccessTime;
 
-					targetChildFile.LastWriteTime = sourceChildFile.LastWriteTime;
+					if (CurrentProfil.LastWriteTime)
+						targetChildFile.LastWriteTime = sourceChildFile.LastWriteTime;
 
-					targetChildFile.Attributes = sourceChildFile.Attributes;
+					if(CurrentProfil.Attributes)
+						targetChildFile.Attributes = sourceChildFile.Attributes;
 
-					var fileSecurity = sourceChildFile.GetAccessControl();
-					targetChildFile.SetAccessControl(fileSecurity);
-
+					if (CurrentProfil.AccessControl)
+					{
+						var fileSecurity = sourceChildFile.GetAccessControl();
+						targetChildFile.SetAccessControl(fileSecurity);
+					}
 				}
 				else if (sourceChildItem is DirectoryInfo sourceChildDirectory)
 				{
@@ -434,17 +546,23 @@ namespace Mnemosyne.ViewModels
 					else
 						targetChildDirectory = new DirectoryInfo(absolute);
 
-					if (UpdateCreationTime)
+					if (CurrentProfil.CreationTime)
 						targetChildDirectory.CreationTime = sourceChildDirectory.CreationTime;
 
-					targetChildDirectory.LastAccessTime = sourceChildDirectory.LastAccessTime;
+					if (CurrentProfil.LastAccessTime)
+						targetChildDirectory.LastAccessTime = sourceChildDirectory.LastAccessTime;
 
-					targetChildDirectory.LastWriteTime = sourceChildDirectory.LastWriteTime;
+					if (CurrentProfil.LastWriteTime)
+						targetChildDirectory.LastWriteTime = sourceChildDirectory.LastWriteTime;
 
-					targetChildDirectory.Attributes = sourceChildDirectory.Attributes;
+					if (CurrentProfil.Attributes)
+						targetChildDirectory.Attributes = sourceChildDirectory.Attributes;
 
-					var fileSecurity = sourceChildDirectory.GetAccessControl();
-					targetChildDirectory.SetAccessControl(fileSecurity);
+					if (CurrentProfil.AccessControl)
+					{
+						var fileSecurity = sourceChildDirectory.GetAccessControl();
+						targetChildDirectory.SetAccessControl(fileSecurity);
+					}
 
 					await Dispatch(sourceChildDirectory, cancellationToken);
 				}
@@ -463,8 +581,6 @@ namespace Mnemosyne.ViewModels
 				var sourceDirectory = new DirectoryInfo(SourcePath);
 
 				cancellationTokenSource = new CancellationTokenSource();
-
-				BufferLength = 1024 * 8;
 
 				IsRunning = true;
 

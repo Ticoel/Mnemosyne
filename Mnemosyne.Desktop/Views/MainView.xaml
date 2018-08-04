@@ -1,0 +1,153 @@
+﻿<Window x:Class="Mnemosyne.Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:views="clr-namespace:Mnemosyne.Desktop.Views"
+        xmlns:viewmodels="clr-namespace:Mnemosyne.Desktop.ViewModels"
+		xmlns:helpers="clr-namespace:Mnemosyne.Desktop.Helpers"
+		mc:Ignorable="d"
+        Title="Mnemosyne"
+		Background="{StaticResource WindowBackgroundColor}"
+		Width="800"
+		Height="600"
+		MinWidth="640"
+		MinHeight="480">
+	<Window.DataContext>
+		<viewmodels:MainViewModel/>
+	</Window.DataContext>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="1*"/>
+			<RowDefinition Height="3*"/>
+			<RowDefinition Height="1*"/>
+		</Grid.RowDefinitions>
+		<Grid
+			Grid.Row="0">
+			<TextBlock
+				Margin="10"
+				HorizontalAlignment="Center"
+				VerticalAlignment="Bottom"
+				Style="{StaticResource PrimaryTextBlockStyle}"
+				Text="Mnemosyne"/>
+		</Grid>
+		<ScrollViewer
+			Grid.Row="1"
+			Margin="10"
+			HorizontalScrollBarVisibility="Disabled"
+			VerticalScrollBarVisibility="Auto">
+			<StackPanel
+				HorizontalAlignment="Center"
+				VerticalAlignment="Center">
+				<WrapPanel
+					Orientation="Horizontal"
+					HorizontalAlignment="Center">
+					<Button
+						Margin="10"
+						Command="{Binding Path=CMDSelectSource, Mode=OneTime}"
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="{Binding Path=SourcePath, Converter={StaticResource PathToFileNameConverter}, ConverterParameter=Source, Mode=OneWay}"/>
+					<TextBlock
+						Margin="10"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Style="{DynamicResource PrimaryTextBlockStyle}"
+						Text="to"/>
+					<Button
+						Margin="10"
+						Command="{Binding Path=CMDSelectTarget, Mode=OneTime}"
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="{Binding Path=TargetPath, Converter={StaticResource PathToFileNameConverter}, ConverterParameter=Target, Mode=OneWay}"/>
+				</WrapPanel>
+				<WrapPanel
+					Orientation="Horizontal"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center">
+					<TextBlock
+						Margin="10"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="using"/>
+					<ComboBox
+						Name="ComboBox"
+						Margin="10"
+						ItemsSource="{Binding Path=Profils, Mode=OneWay}"
+						SelectedItem="{Binding Path=CurrentProfil, Mode=TwoWay}"
+						Style="{StaticResource ComboBoxStyle}"
+						Loaded="ComboBox_GotFocus"
+						GotFocus="ComboBox_GotFocus">
+					</ComboBox>
+					<Button
+						Margin="10"
+						Command="{Binding Path=CMDViewProfil}"
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="View"/>
+					<Button
+						Margin="10"
+						Command="{Binding Path=CMDAdd}"
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="Add"/>
+				</WrapPanel>
+				<WrapPanel
+					Orientation="Horizontal"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center">
+					<Button
+						Margin="10"
+						Command="{Binding Path=CMDStart, Mode=OneTime}"
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="Start"/>
+					<Button
+						Margin="10"
+						Command="{Binding Path=CMDCancel, Mode=OneTime}"
+						Style="{StaticResource PrimaryButtonStyle}"
+						Content="Cancel"/>
+				</WrapPanel>
+			</StackPanel>
+		</ScrollViewer>
+		<ScrollViewer
+			Grid.Row="2"
+			HorizontalScrollBarVisibility="Disabled"
+			VerticalScrollBarVisibility="Auto">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="1*"/>
+					<RowDefinition Height="2*"/>
+				</Grid.RowDefinitions>
+				<Grid
+					Grid.Row="0">
+					<ProgressBar
+						Style="{StaticResource PrimaryProgressBarStyle}"
+						Minimum="0"
+						Maximum="{Binding Path=ItemCount, Mode=OneWay}"
+						Value="{Binding Path=ItemPosition, Mode=OneWay}"/>
+					<TextBlock
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Margin="10"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="{Binding Path=Output, Mode=OneWay}"/>
+				</Grid>
+				<WrapPanel
+					Grid.Row="1"
+					Orientation="Horizontal"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center">
+					<TextBlock
+						Margin="10"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="{Binding Path=Speed, Converter={StaticResource OctetToMebioctetConverter}, Mode=OneWay}"/>
+					<TextBlock
+						Margin="10"
+						Style="{StaticResource PrimaryTextBlockStyle}"
+						Text="{Binding Path=ElapsedTime, Converter={StaticResource TimeSpanToStringConverter}, ConverterParameter='Elapsed time: ', Mode=OneWay}"/>
+					<TextBlock
+						Margin="10"
+						Style="{StaticResource PrimaryTextBlockStyle}"			
+						Text="{Binding Path=RemainingTime, Converter={StaticResource TimeSpanToStringConverter}, ConverterParameter='Remaining time: ', Mode=OneWay}"/>
+				</WrapPanel>
+			</Grid>
+		</ScrollViewer>
+	</Grid>
+</Window>
