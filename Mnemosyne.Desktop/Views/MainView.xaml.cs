@@ -1,5 +1,4 @@
-﻿using Mnemosyne.Desktop.Models;
-using Mnemosyne.Desktop.ViewModels;
+﻿using Mnemosyne.Desktop.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mnemosyne.Desktop.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -18,9 +19,9 @@ namespace Mnemosyne.Desktop.Views
 	/// <summary>
 	/// Logique d'interaction pour ProfileAddingWindow.xaml
 	/// </summary>
-	public partial class ProfileAddingWindow : Window
+	public partial class AddingView : Window
 	{
-		public ProfileAddingWindow()
+		public AddingView()
 		{
 			InitializeComponent();
 		}
@@ -41,6 +42,11 @@ namespace Mnemosyne.Desktop.Views
 				texBox.Text = texBox.Text.Remove(offset, length);
 				texBox.CaretIndex = offset;
 			}
+		}
+
+		private void TextBox_TextChanged_1(object sender, TextChangedEventArgs e)
+		{
+			((AddingViewModel)DataContext).CMDCreate.Notify();
 		}
 	}
 }

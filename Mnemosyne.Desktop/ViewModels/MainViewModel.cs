@@ -1,5 +1,4 @@
 ﻿using Mnemosyne.Desktop.Helpers;
-using Mnemosyne.Desktop.Models;
 using Mnemosyne.Desktop.Views;
 using System;
 using System.Collections.Generic;
@@ -119,6 +118,7 @@ namespace Mnemosyne.Desktop.ViewModels
 						CMDSelectSource.Notify();
 						CMDSelectTarget.Notify();
 						CMDViewProfil.Notify();
+						CMDAdd.Notify();
 						CMDStart.Notify();
 						CMDCancel.Notify();
 					}));
@@ -263,7 +263,7 @@ namespace Mnemosyne.Desktop.ViewModels
 			CMDSelectSource = new RelayAction((param) => SelectSource(), (param) => !IsRunning);
 			CMDSelectTarget = new RelayAction((param) => SelectTarget(), (param) => !IsRunning && SourcePath != null);
 			CMDViewProfil = new RelayAction((param) => { OpenProfilWindow(); }, (param) => !IsRunning && CurrentProfil != null);
-			CMDAdd = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => true);
+			CMDAdd = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => !IsRunning);
 			CMDStart = new RelayAction(async (param) => { await Start(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null);
 			CMDCancel = new RelayAction((param) => { Cancel(); }, (param) => IsRunning);
 
@@ -372,15 +372,15 @@ namespace Mnemosyne.Desktop.ViewModels
 
 		private void OpenProfilWindow()
 		{
-			var win = new ProfilWindow(CurrentProfil);
+			var win = new VisualizationView(CurrentProfil);
 			win.Closed += (sender, e) => { GetProfils(); };
 			win.ShowDialog();
 		}
 
 		private void OpenAddingProfileWindow()
 		{
-			var win = new ProfileAddingWindow();
-			win.ShowDialog();
+			var view = new AddingView();
+			view.ShowDialog();
 		}
 
 		private void CopyFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)

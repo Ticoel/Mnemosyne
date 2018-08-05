@@ -11,28 +11,28 @@
 	<helpers:OctetToMebioctetConverter x:Key="OctetToMebioctetConverter"/>
 	<helpers:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter"/>
 	<helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-	<system:Double x:Key="PrimaryFontSize">24</system:Double>
-	<Thickness x:Key="PrimaryBorderSize">3</Thickness>
-	<SolidColorBrush Color="White" x:Key="PrimaryFontColor"/>
+	<system:Double x:Key="FontSize1">24</system:Double>
+	<Thickness x:Key="Space1">10</Thickness>
 	<SolidColorBrush Color="Black" x:Key="WindowBackgroundColor"/>
-	<SolidColorBrush Color="Gray" x:Key="ActiveBackgroundColor"/>
-	<SolidColorBrush Color="LightGray" x:Key="DisabledBackgroundColor"/>
-	<SolidColorBrush Color="White" x:Key="ActiveColor"/>
-	<SolidColorBrush Color="Green" x:Key="CheckedColor"/>
-	<SolidColorBrush Color="Red" x:Key="UncheckedColor"/>
-	<Style TargetType="TextBlock" x:Key="PrimaryTextBlockStyle">
-		<Setter Property="FontSize" Value="{StaticResource PrimaryFontSize}"/>
+	<SolidColorBrush Color="LightGray" x:Key="ActiveBackgroundColor"/>
+	<SolidColorBrush Color="Gray" x:Key="DisabledBackgroundColor"/>
+	<SolidColorBrush Color="Gold" x:Key="PressedBackgroundColor"/>
+	<SolidColorBrush Color="LightGray" x:Key="ActiveColor1"/>
+	<SolidColorBrush Color="Black" x:Key="ActiveColor2"/>
+	<Style TargetType="TextBlock" x:Key="TextBlockStyle1">
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor1}"/>
 		<Setter Property="TextWrapping" Value="Wrap"/>
-		<Setter Property="Foreground" Value="{StaticResource PrimaryFontColor}"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
 	</Style>
-	<Style TargetType="TextBox" x:Key="PrimaryTextBox">
-		<Setter Property="FontSize" Value="{StaticResource PrimaryFontSize}"/>
-		<Setter Property="Foreground" Value="{StaticResource ActiveColor}"/>
-		<Setter Property="CaretBrush" Value="{StaticResource ActiveColor}"/>
-		<Setter Property="Padding" Value="10"/>
+	<Style TargetType="TextBlock" x:Key="TextBlockStyle2">
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
 		<Setter Property="TextWrapping" Value="Wrap"/>
-		<Setter Property="Background" Value="{StaticResource ActiveBackgroundColor}"/>
-		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
+	</Style>
+	<Style TargetType="TextBox" x:Key="TextBoxStyle">
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="TextBox">
@@ -70,8 +70,30 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
+		<Setter Property="CaretBrush" Value="{StaticResource ActiveColor2}"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
+		<Setter Property="Padding" Value="{StaticResource Space1}"/>
+		<Setter Property="TextWrapping" Value="Wrap"/>
+		<Setter Property="BorderThickness" Value="0"/>
 	</Style>
-	<Style TargetType="Button" x:Key="PrimaryButtonStyle">
+	<Style TargetType="TextBox" x:Key="ComboBoxTextBoxStyle">
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate
+					TargetType="TextBox">
+					<Grid>
+						<ScrollViewer
+							Name="PART_ContentHost"/>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="IsReadOnly" Value="True"/>
+	</Style>
+	<Style TargetType="Button" x:Key="ButtonStyle">
 		<Setter
 			Property="Template">
 			<Setter.Value>
@@ -80,11 +102,10 @@
 					<Grid
 						Name="Grid"
 						Background="Transparent">
-						<Border>
-							<ContentPresenter
-								HorizontalAlignment="Center"
-								VerticalAlignment="Center"/>
-						</Border>
+						<ContentPresenter
+							Margin="{TemplateBinding Padding}"
+							HorizontalAlignment="Center"
+							VerticalAlignment="Center"/>
 						<VisualStateManager.VisualStateGroups>
 							<VisualStateGroup
 								Name="CommonStates">
@@ -115,7 +136,7 @@
 											Storyboard.TargetName="Grid"
 											Storyboard.TargetProperty="Background.Color"
 											Duration="0"
-											To="Orange"/>
+											To="{Binding Source={StaticResource PressedBackgroundColor}, Path=Color}"/>
 									</Storyboard>
 								</VisualState>
 							</VisualStateGroup>
@@ -124,61 +145,50 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
-		<Setter
-			Property="ContentTemplate">
-			<Setter.Value>
-				<DataTemplate>
-					<TextBlock
-						Padding="5"
-						Style="{StaticResource PrimaryTextBlockStyle}"
-						Text="{Binding}"/>
-				</DataTemplate>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
+		<Setter Property="Padding" Value="{StaticResource Space1}"/>
 	</Style>
-	<Style TargetType="ToggleButton" x:Key="PrimaryToggleButtonStyle">
+	<Style TargetType="ToggleButton" x:Key="ComboBoxToggleButtonStyle">
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="ToggleButton">
-					<Border
-						Background="Transparent">
-						<Grid>
+					<Grid
+						Background="{TemplateBinding Background}">
 							<ContentPresenter/>
-						</Grid>
-					</Border>
+					</Grid>
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
 		<Setter Property="ContentTemplate">
 			<Setter.Value>
 				<DataTemplate>
-					<Border>
-						<Grid>
-							<Path
-								Margin="10"
-								Width="30"
-								Height="15"
-								Stroke="{StaticResource ActiveColor}"
-								StrokeThickness="3"
-								StrokeStartLineCap="Round"
-								StrokeLineJoin="Round"
-								StrokeEndLineCap="Round"
-								Data="m1.5,1.5 13.5,12 l13,-12"/>
-						</Grid>
-					</Border>
+					<Grid>
+						<Path
+							Width="30"
+							Height="15"
+							Stroke="{StaticResource ActiveColor2}"					
+							StrokeThickness="2"
+							StrokeStartLineCap="Round"
+							StrokeLineJoin="Round"
+							StrokeEndLineCap="Round"
+							Data="m1,1 14,13 l14,-13"/>
+					</Grid>
 				</DataTemplate>
 			</Setter.Value>
 		</Setter>
+		<Setter Property="Background" Value="Transparent"/>
 	</Style>
-	<Style TargetType="ToggleButton" x:Key="SecondaryToggleButtonStyle">
+	<Style TargetType="ToggleButton" x:Key="ToggleButtonStyle">
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="ToggleButton">
 					<Grid
 						Name="Grid"
-						Background="Transparent">
+						Background="{TemplateBinding Background}">
 						<ContentPresenter
-							Margin="10"/>
+							Margin="{TemplateBinding Padding}"/>
 						<VisualStateManager.VisualStateGroups>
 							<VisualStateGroup Name="CommonStates">
 								<VisualState Name="Normal">
@@ -205,49 +215,45 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
-		<Setter Property="ContentTemplate">
-			<Setter.Value>
-				<DataTemplate>
-					<Grid>
-						<TextBlock
-							TextWrapping="Wrap"
-							Style="{StaticResource PrimaryTextBlockStyle}"
-							Text="{Binding}"/>
-					</Grid>
-				</DataTemplate>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
+		<Setter Property="Padding" Value="{StaticResource Space1}"/>
 	</Style>
-	<Style TargetType="ProgressBar" x:Key="PrimaryProgressBarStyle">
-		<Setter Property="Foreground" Value="{StaticResource ActiveColor}"/>
+	<Style TargetType="ProgressBar" x:Key="ProgressBarStyle">
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor1}"/>
 		<Setter Property="Background" Value="{StaticResource ActiveBackgroundColor}"/>
 	</Style>
-	<Style TargetType="ListViewItem" x:Key="PrimaryListViewItemStyle">
+	<Style TargetType="ComboBoxItem" x:Key="ComboBoxItemStyle">
 		<Setter Property="Template">
 			<Setter.Value>
-				<ControlTemplate TargetType="ListViewItem">
+				<ControlTemplate TargetType="ComboBoxItem">
 					<Grid
 						Name="Grid"
 						Background="Transparent">
-						<ContentPresenter/>
+						<ContentPresenter
+							Margin="{TemplateBinding Padding}"/>
 						<VisualStateManager.VisualStateGroups>
-							<VisualStateGroup Name="CommonStates">
-								<VisualState Name="Normal">
+							<VisualStateGroup
+								Name="CommonStates">
+								<VisualState
+									Name="Normal">
 									<Storyboard>
 										<ColorAnimation
 											Storyboard.TargetName="Grid"
 											Storyboard.TargetProperty="Background.Color"
-											Duration="0"
-											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"/>
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"
+											Duration="0"/>
 									</Storyboard>
 								</VisualState>
-								<VisualState Name="Selected">
+								<VisualState
+									Name="Selected">
 									<Storyboard>
 										<ColorAnimation
 											Storyboard.TargetName="Grid"
 											Storyboard.TargetProperty="Background.Color"
-											Duration="0"
-											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"/>
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"
+											Duration="0"/>
 									</Storyboard>
 								</VisualState>
 							</VisualStateGroup>
@@ -256,93 +262,101 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
-		<Setter Property="ContentTemplate">
-			<Setter.Value>
-				<DataTemplate>
-					<TextBlock
-						Padding="10"
-						Style="{StaticResource PrimaryTextBlockStyle}"
-						Text="{Binding Path=Name}"/>
-				</DataTemplate>
-			</Setter.Value>
-		</Setter>
-	</Style>
-	<Style TargetType="ListView" x:Key="PrimaryListViewStyle">
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="ListView">
-					<ScrollViewer>
-						<ItemsPresenter/>
-					</ScrollViewer>
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
-		<Setter Property="ItemContainerStyle" Value="{StaticResource PrimaryListViewItemStyle}"/>
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
+		<Setter Property="Padding" Value="{StaticResource Space1}"/>
 	</Style>
 	<Style TargetType="ComboBox" x:Key="ComboBoxStyle">
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="ComboBox">
 					<Grid
-						Name="Grid">
-						<Border
-							BorderBrush="{StaticResource ActiveColor}"
-							BorderThickness="{StaticResource PrimaryBorderSize}">
-							<Grid>
+						Name="Grid"
+						Background="Transparent">
+						<Grid>
+							<Grid
+								Margin="{TemplateBinding Padding}">
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition/>
-									<ColumnDefinition Width="auto"/>
+									<ColumnDefinition
+										Width="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=Padding.Left, Mode=OneWay}"/>
+									<ColumnDefinition/>
 								</Grid.ColumnDefinitions>
-								<TextBlock
+								<TextBox
 									Grid.Column="0"
-									HorizontalAlignment="Center"
-									VerticalAlignment="Center"
-									Margin="10"
-									Style="{StaticResource PrimaryTextBlockStyle}"
-									Text="{Binding ElementName=ListView, Path=SelectedItem.Name, Mode=OneWay}"/>
-								<ToggleButton
-									Name="ToggleButton"
-									Grid.Column="1"
+									Name="PART_EditableTextBox"
 									HorizontalContentAlignment="Center"
 									VerticalContentAlignment="Center"
-									IsChecked="{Binding ElementName=Popup, Path=IsOpen, Mode=TwoWay}"
-									Style="{StaticResource PrimaryToggleButtonStyle}"
-									GotFocus="ToggleButton_GotFocus"/>
-								<Popup
-									Name="Popup"
-									Placement="Center"
-									HorizontalOffset="0"
-									VerticalOffset="0"
-									Width="{Binding ElementName=Grid, Path=ActualWidth}"
-									IsOpen="{Binding ElementName=ToggleButton, Path=IsChecked, Mode=OneWay}"
-									StaysOpen="False">
-									<Border
-										BorderThickness="{StaticResource PrimaryBorderSize}"
-										BorderBrush="{StaticResource ActiveColor}">
-										<ListView
-											Name="ListView"
-											ItemsSource="{TemplateBinding ItemsSource}"
-											SelectedItem="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=SelectedItem, Mode=TwoWay}"
-											Style="{StaticResource PrimaryListViewStyle}"
-											GotFocus="ListView_GotFocus"
-											SelectionChanged="ListView_SelectionChanged"/>
-									</Border>
-								</Popup>
+									Foreground="{TemplateBinding Foreground}"
+									Style="{StaticResource ComboBoxTextBoxStyle}"
+									Text="{TemplateBinding Text}"/>
+								<Separator
+									Grid.Column="1"
+									Background="Transparent"/>
+								<ToggleButton
+									Grid.Column="2"
+									HorizontalContentAlignment="Center"
+									VerticalContentAlignment="Center"
+									Foreground="{TemplateBinding Foreground}"
+									Style="{StaticResource ComboBoxToggleButtonStyle}"
+									IsChecked="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsDropDownOpen, Mode=TwoWay}"/>
 							</Grid>
-						</Border>
+							<Popup
+								Name="PART_Popup"
+								Placement="Center"
+								HorizontalOffset="0"
+								VerticalOffset="0"
+								Width="{Binding ElementName=Grid, Path=ActualWidth}"
+								IsOpen="{TemplateBinding IsDropDownOpen}">
+								<ScrollViewer>
+									<ItemsPresenter/>
+								</ScrollViewer>
+							</Popup>
+						</Grid>
+						<VisualStateManager.VisualStateGroups>
+							<VisualStateGroup
+								Name="CommonStates">
+								<VisualState
+									Name="Normal">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											To="{Binding Source={StaticResource ActiveBackgroundColor}, Path=Color}"
+											Duration="0"/>
+									</Storyboard>
+								</VisualState>
+								<VisualState
+									Name="Disabled">
+									<Storyboard>
+										<ColorAnimation
+											Storyboard.TargetName="Grid"
+											Storyboard.TargetProperty="Background.Color"
+											To="{Binding Source={StaticResource DisabledBackgroundColor}, Path=Color}"
+											Duration="0"/>
+									</Storyboard>
+								</VisualState>
+							</VisualStateGroup>
+						</VisualStateManager.VisualStateGroups>
 					</Grid>
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
+		<Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItemStyle}"/>
+		<Setter Property="DisplayMemberPath" Value="Name"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
+		<Setter Property="Padding" Value="{StaticResource Space1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
 	</Style>
-	<Style TargetType="ListViewItem" x:Key="SecondaryListViewItemStyle">
+	<Style TargetType="ListViewItem" x:Key="ListViewItemStyle">
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="ListViewItem">
 					<Grid
 						Name="Grid"
 						Background="Transparent">
-						<ContentPresenter/>
+						<ContentPresenter
+							Margin="{TemplateBinding Padding}"/>
 						<VisualStateManager.VisualStateGroups>
 							<VisualStateGroup Name="CommonStates">
 								<VisualState Name="Normal">
@@ -369,18 +383,11 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
-		<Setter Property="ContentTemplate">
-			<Setter.Value>
-				<DataTemplate>
-					<TextBlock
-						Padding="10"
-						Style="{StaticResource PrimaryTextBlockStyle}"
-						Text="{Binding}"/>
-				</DataTemplate>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="FontSize" Value="{StaticResource FontSize1}"/>
+		<Setter Property="Foreground" Value="{StaticResource ActiveColor2}"/>
+		<Setter Property="Padding" Value="{StaticResource Space1}"/>
 	</Style>
-	<Style TargetType="ListView" x:Key="SecondaryListViewStyle">
+	<Style TargetType="ListView" x:Key="ListViewStyle">
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate>
@@ -390,6 +397,7 @@
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
-		<Setter Property="ItemContainerStyle" Value="{StaticResource SecondaryListViewItemStyle}"/>
+		<Setter Property="ItemContainerStyle" Value="{StaticResource ListViewItemStyle}"/>
+		<Setter Property="Margin" Value="{StaticResource Space1}"/>
 	</Style>
 </ResourceDictionary>
