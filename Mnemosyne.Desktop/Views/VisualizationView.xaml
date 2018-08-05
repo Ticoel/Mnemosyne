@@ -13,7 +13,7 @@
 		MinWidth="640"
 		MinHeight="480">
 	<Window.DataContext>
-		<viewmodels:ProfilViewModel/>
+		<viewmodels:VisualizationViewModel/>
 	</Window.DataContext>
 	<ScrollViewer>
 		<StackPanel

@@ -1,116 +1,201 @@
-﻿using Mnemosyne.Desktop.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace Mnemosyne.Desktop.ViewModels
 {
-	public class ProfilViewModel : CommonViewModel
+	[XmlRoot("profile")]
+	public class ProfileViewModel : CommonViewModel
 	{
-		public Profile Profil
+		[XmlIgnore()]
+		public FileInfo FileInfo { get; set; }
+
+		[XmlIgnore()]
+		public bool IsModifiable { get; }
+
+		[XmlIgnore()]
+		public string Name
 		{
-			get => profil;
+			get => name;
 			set
 			{
-				if (value != profil)
+				if (value != name)
 				{
-					profil = value;
-					Notify(nameof(Profil));
+					name = value;
+					Notify(nameof(Name));
 				}
 			}
 		}
 
-		public string NewDirectory
+		[XmlIgnore()]
+		public int BufferLength
 		{
-			get => newDirectory;
+			get => bufferLength;
 			set
 			{
-				if (value != newDirectory)
+				if (value != bufferLength)
 				{
-					newDirectory = value;
-					Notify(nameof(NewDirectory));
-					CMDAddDirectory.Notify();
+					bufferLength = value;
+					Notify(nameof(BufferLength));
 				}
 			}
 		}
 
-		public string SelectedDirectory
+		[XmlIgnore()]
+		public bool CreationTime
 		{
-			get => selectedDirectory;
+			get => creationTime;
 			set
 			{
-				if (value != selectedDirectory)
+				if (value != creationTime)
 				{
-					selectedDirectory = value;
-					Notify(nameof(SelectedDirectory));
-					CMDRemoveDirectory.Notify();
+					creationTime = value;
+					Notify(nameof(CreationTime));
 				}
 			}
 		}
 
-		public string NewFile
+		[XmlIgnore()]
+		public bool LastAccessTime
 		{
-			get => newFile;
+			get => lastAccessTime;
 			set
 			{
-				if (value != newFile)
+				if (value != lastAccessTime)
 				{
-					newFile = value;
-					Notify(nameof(NewFile));
-					CMDAddFile.Notify();
+					lastAccessTime = value;
+					Notify(nameof(LastAccessTime));
 				}
 			}
 		}
 
-		public string SelectedFile
+		[XmlIgnore()]
+		public bool LastWriteTime
 		{
-			get => selectedFile;
+			get => lastWriteTime;
 			set
 			{
-				if (value != selectedDirectory)
+				if (value != lastWriteTime)
 				{
-					selectedFile = value;
-					Notify(nameof(SelectedFile));
-					CMDRemoveFile.Notify();
+					lastWriteTime = value;
+					Notify(nameof(LastWriteTime));
 				}
 			}
 		}
 
-		public RelayAction CMDAddDirectory { get; }
-		public RelayAction CMDRemoveDirectory { get; }
-		public RelayAction CMDAddFile { get; }
-		public RelayAction CMDRemoveFile { get; }
-		public RelayAction CMDSave { get; private set; }
-
-		Profile profil;
-		private string newDirectory;
-		private string selectedDirectory;
-		private string newFile;
-		private string selectedFile;
-
-		public ProfilViewModel()
+		[XmlIgnore()]
+		public bool Attributes
 		{
-			CMDAddDirectory = new RelayAction((param) => Profil.DirectoriesExcluded.Add(NewDirectory), (param) => !string.IsNullOrWhiteSpace(NewDirectory));
-			CMDRemoveDirectory = new RelayAction((param) => Profil.DirectoriesExcluded.Remove(SelectedDirectory), (param) => SelectedDirectory != null);
-			CMDAddFile = new RelayAction((param) => Profil.FilesExcluded.Add(NewFile), (param) => !string.IsNullOrWhiteSpace(NewFile));
-			CMDRemoveFile = new RelayAction((param) => Profil.FilesExcluded.Remove(SelectedFile), (param) => SelectedFile != null);
-
-			CMDSave = new RelayAction((param) => { if (!(bool)param) Save(); }, (param) => true);
+			get => attributes;
+			set
+			{
+				if (value != attributes)
+				{
+					attributes = value;
+					Notify(nameof(Attributes));
+				}
+			}
 		}
 
-		private void Save()
+		[XmlIgnore()]
+		public bool AccessControl
 		{
-			var serializer = new XmlSerializer(typeof(Profile));
-
-			serializer.Serialize(Profil.FileInfo.Open(System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.Write), Profil);
-			
+			get => accessControl;
+			set
+			{
+				if (value != accessControl)
+				{
+					accessControl = value;
+					Notify(nameof(AccessControl));
+				}
+			}
 		}
 
-		public void Remove()
+		[XmlIgnore()]
+		public ObservableCollection<string> DirectoriesExcluded
 		{
-			Profil.FileInfo.Delete();
+			get => directoriesExcluded;
+			set
+			{
+				if (value != directoriesExcluded)
+				{
+					directoriesExcluded = value;
+					Notify(nameof(DirectoriesExcluded));
+				}
+			}
+		}
+
+		[XmlIgnore()]
+		public ObservableCollection<string> FilesExcluded
+		{
+			get => filesExcluded;
+			set
+			{
+				if (value != filesExcluded)
+				{
+					filesExcluded = value;
+					Notify(nameof(FilesExcluded));
+				}
+			}
+		}
+
+		[XmlElement("name")]
+		public string name;
+
+		[XmlElement("bufferlength")]
+		public int bufferLength;
+
+		[XmlElement("creationtime")]
+		public bool creationTime;
+
+		[XmlElement("lastaccesstime")]
+		public bool lastAccessTime;
+
+		[XmlElement("lastwritetime")]
+		public bool lastWriteTime;
+
+		[XmlElement("attributes")]
+		public bool attributes;
+
+		[XmlElement("accesscontrol")]
+		public bool accessControl;
+
+		[XmlArray("directoriesexcluded")]
+		[XmlArrayItem("directory")]
+		public ObservableCollection<string> directoriesExcluded;
+
+		[XmlArray("filesexcluded")]
+		[XmlArrayItem("file")]
+		public ObservableCollection<string> filesExcluded;
+
+		public ProfileViewModel()
+		{
+			IsModifiable = true;
+		}
+
+		public ProfileViewModel(bool isModifiable)
+		{
+			IsModifiable = isModifiable;
+		}
+
+		public static ProfileViewModel CreateDefault(bool isModifiable)
+		{
+			return new ProfileViewModel(isModifiable)
+			{
+				Name = "default",
+				BufferLength = 4096,
+				CreationTime = true,
+				LastAccessTime = true,
+				LastWriteTime = true,
+				Attributes = true,
+				AccessControl = true
+			};
 		}
 	}
 }

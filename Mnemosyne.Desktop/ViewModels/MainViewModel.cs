@@ -204,10 +204,10 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		public ObservableCollection<Profile> Profils { get; }
+		public ObservableCollection<ProfileViewModel> Profils { get; }
 		public ObservableCollection<string> ProfilsPaths { get; }
 
-		public Profile CurrentProfil
+		public ProfileViewModel CurrentProfil
 		{
 			get
 			{
@@ -253,11 +253,11 @@ namespace Mnemosyne.Desktop.ViewModels
 		private long copiedByte;
 		private long byteToCopy;
 		private DateTime estimateEndTime;
-		private Profile currentProfil;
+		private ProfileViewModel currentProfil;
 
 		public MainViewModel()
 		{
-			Profils = new ObservableCollection<Profile>();
+			Profils = new ObservableCollection<ProfileViewModel>();
 			ProfilsPaths = new ObservableCollection<string>();
 
 			CMDSelectSource = new RelayAction((param) => SelectSource(), (param) => !IsRunning);
@@ -310,7 +310,7 @@ namespace Mnemosyne.Desktop.ViewModels
 
 		public void GetProfils()
 		{
-			var serializer = new XmlSerializer(typeof(Profile));
+			var serializer = new XmlSerializer(typeof(ProfileViewModel));
 
 			var directory = new DirectoryInfo(Path.Combine(Application.LocalUserAppDataPath, "Profiles"));
 
@@ -323,7 +323,7 @@ namespace Mnemosyne.Desktop.ViewModels
 
 			if (defaultProfil.Count() < 1)
 			{
-				Profils.Add(Profile.CreateDefault(false));
+				Profils.Add(ProfileViewModel.CreateDefault(false));
 			}
 
 			var files = directory.EnumerateFiles();
@@ -339,14 +339,14 @@ namespace Mnemosyne.Desktop.ViewModels
 				{
 					using (var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
 					{
-						var profil = (Profile)serializer.Deserialize(stream);
+						var profil = (ProfileViewModel)serializer.Deserialize(stream);
 						profil.FileInfo = file;
 						Profils.Add(profil);
 					}
 				}
 			}
 
-			List<Profile> toDelete = new List<Profile>();
+			List<ProfileViewModel> toDelete = new List<ProfileViewModel>();
 
 			foreach (var profil in Profils)
 			{
@@ -571,7 +571,7 @@ namespace Mnemosyne.Desktop.ViewModels
 
 		private async Task Start()
 		{
-			async void main()
+			async Task main()
 			{
 				Debug.WriteLine("START");
 

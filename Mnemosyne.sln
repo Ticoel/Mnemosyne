@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mnemosyne.Desktop", "Mnemosyne.Desktop\Mnemosyne.Desktop.csproj", "{64E6EF70-23B4-424E-9935-DB4EBC1B8057}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Mnemosyne.Setup", "Mnemosyne.Setup\Mnemosyne.Setup.vdproj", "{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,15 @@ Global
 		{64E6EF70-23B4-424E-9935-DB4EBC1B8057}.Release|x64.Build.0 = Release|Any CPU
 		{64E6EF70-23B4-424E-9935-DB4EBC1B8057}.Release|x86.ActiveCfg = Release|Any CPU
 		{64E6EF70-23B4-424E-9935-DB4EBC1B8057}.Release|x86.Build.0 = Release|Any CPU
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Debug|Any CPU.ActiveCfg = Debug
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Debug|ARM.ActiveCfg = Debug
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Debug|x64.ActiveCfg = Debug
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Debug|x86.ActiveCfg = Debug
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Release|Any CPU.ActiveCfg = Release
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Release|Any CPU.Build.0 = Release
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Release|ARM.ActiveCfg = Release
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Release|x64.ActiveCfg = Release
+		{B2DE58EB-27CF-4D92-BE34-912C7AE7101E}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -10,17 +10,17 @@ namespace Mnemosyne.Desktop.Views
 	/// </summary>
 	public partial class VisualizationView : Window
     {
-		private ProfilViewModel profilViewModel;
+		private VisualizationViewModel VisualizationViewModel;
 
-        public VisualizationView(Profile profil)
+        public VisualizationView(ProfileViewModel profil)
         {
             InitializeComponent();
 
-			profilViewModel = ((ProfilViewModel)DataContext);
+			VisualizationViewModel = ((VisualizationViewModel)DataContext);
 
-			profilViewModel.Profil = profil;
+			VisualizationViewModel.Profil = profil;
 
-			Closed += (sender, e) => { if (profilViewModel.Profil.IsModifiable) profilViewModel.CMDSave.Execute(false); };
+			Closed += (sender, e) => { if (VisualizationViewModel.Profil.IsModifiable) VisualizationViewModel.CMDSave.Execute(false); };
 		}
 
 		private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -38,7 +38,7 @@ namespace Mnemosyne.Desktop.Views
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			profilViewModel.Remove();
+			VisualizationViewModel.Remove();
 			Close();
 		}
 	}

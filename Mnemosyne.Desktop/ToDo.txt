@@ -1,0 +1,2 @@
+﻿Dans AddingViewModel, contrôler le nom de sortie du fichier.
+Dans MainViewModel, prendre en compte les dossiers et fichiers exclus, prendre en compte les accés de sécurité.
