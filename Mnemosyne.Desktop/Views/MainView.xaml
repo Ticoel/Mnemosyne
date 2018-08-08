@@ -3,9 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		xmlns:views="clr-namespace:Mnemosyne.Desktop.Views"
         xmlns:viewmodels="clr-namespace:Mnemosyne.Desktop.ViewModels"
-		xmlns:helpers="clr-namespace:Mnemosyne.Desktop.Helpers"
 		mc:Ignorable="d"
         Title="Mnemosyne"
 		Background="{StaticResource WindowBackgroundColor}"
@@ -64,15 +62,15 @@
 						SelectedItem="{Binding Path=CurrentProfil, Mode=TwoWay}"
 						Style="{StaticResource ComboBoxStyle}"
 						IsEnabled="{Binding Path=IsRunning, Converter={StaticResource InverseBoolConverter}}"
-						Loaded="ComboBox_GotFocus"
-						GotFocus="ComboBox_GotFocus">
+						Loaded="ComboBox_GetProfils"
+						GotFocus="ComboBox_GetProfils">
 					</ComboBox>
 					<Button
-						Command="{Binding Path=CMDViewProfil}"
+						Command="{Binding Path=CMDViewProfile}"
 						Style="{StaticResource ButtonStyle}"
 						Content="View"/>
 					<Button
-						Command="{Binding Path=CMDAdd}"
+						Command="{Binding Path=CMDAddProfile}"
 						Style="{StaticResource ButtonStyle}"
 						Content="Add"/>
 				</WrapPanel>

@@ -194,7 +194,9 @@ namespace Mnemosyne.Desktop.ViewModels
 				LastAccessTime = true,
 				LastWriteTime = true,
 				Attributes = true,
-				AccessControl = true
+				AccessControl = true,
+				DirectoriesExcluded = new ObservableCollection<string>(),
+				FilesExcluded = new ObservableCollection<string>()
 			};
 		}
 	}

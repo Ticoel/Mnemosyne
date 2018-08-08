@@ -88,6 +88,8 @@
     <Compile Include="Helpers\BoolToButtonNameConverter.cs" />
     <Compile Include="Helpers\BoolToVisibilityConverter.cs" />
     <Compile Include="Helpers\InverseBoolConverter.cs" />
+    <Compile Include="Helpers\FileComparer.cs" />
+    <Compile Include="Helpers\DirectoryComparer.cs" />
     <Compile Include="Helpers\TimeSpanToStringConverter.cs" />
     <Compile Include="Helpers\OctetToMebioctetConverter.cs" />
     <Compile Include="Helpers\DateTimeToStringConverter.cs" />

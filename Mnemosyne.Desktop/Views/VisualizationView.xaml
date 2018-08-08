@@ -3,10 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:Mnemosyne.Desktop.Views"
 		xmlns:viewmodels="clr-namespace:Mnemosyne.Desktop.ViewModels"
         mc:Ignorable="d"
-        Title="{Binding Path=Profil.Name}"
+        Title="{Binding Path=Profile.Name}"
 		Background="{StaticResource WindowBackgroundColor}"
 		Width="800"
 		Height="600"
@@ -17,10 +16,10 @@
 	</Window.DataContext>
 	<ScrollViewer>
 		<StackPanel
-			Margin="10">
+			Margin="{StaticResource Space1}">
 			<TextBlock
 				Style="{StaticResource TextBlockStyle1}"
-				Text="{Binding Path=Profil.Name, Mode=OneWay}"/>
+				Text="{Binding Path=Profile.Name, Mode=OneWay}"/>
 			<WrapPanel>
 				<TextBlock
 					Style="{StaticResource TextBlockStyle1}"
@@ -28,8 +27,8 @@
 				<TextBox
 					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
 					Style="{StaticResource TextBoxStyle}"
-					Text="{Binding Path=Profil.BufferLength, Mode=TwoWay}"
-					TextChanged="TextBox_TextChanged"/>
+					Text="{Binding Path=Profile.BufferLength, Mode=TwoWay}"
+					TextChanged="TextBox_TextChanged_CheckDigitInput"/>
 			</WrapPanel>
 			<WrapPanel>
 				<TextBlock
@@ -38,7 +37,7 @@
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
 					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.CreationTime, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.CreationTime, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -48,7 +47,7 @@
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
 					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.LastAccessTime, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.LastAccessTime, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -58,7 +57,7 @@
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
 					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.LastWriteTime, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.LastWriteTime, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -68,7 +67,7 @@
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
 					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.Attributes, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.Attributes, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -78,79 +77,73 @@
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
 					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.AccessControl, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.AccessControl, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel
 				Orientation="Vertical">
-				<TextBlock
-					Style="{StaticResource TextBlockStyle1}"
-					Text="Directories Excluded"/>
-				<ListView
-					Style="{StaticResource ListViewStyle}"
-					ItemsSource="{Binding Path=Profil.DirectoriesExcluded, Mode=OneWay}"
-					SelectedItem="{Binding Path=SelectedDirectory, Mode=TwoWay}"
-					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"/>
-				<WrapPanel
-					Visibility="{Binding ElementName=ToggleButton, Path=IsChecked, Converter={StaticResource BoolToVisibilityConverter}}">
-					<TextBox
-						Style="{StaticResource TextBoxStyle}"
-						IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-						Text="{Binding Path=NewDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+				<WrapPanel>
+					<TextBlock
+						Style="{StaticResource TextBlockStyle1}"
+						Text="Directories Excluded"/>
 					<Button
 						IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
 						Style="{StaticResource ButtonStyle}"
 						Command="{Binding CMDAddDirectory}"
+						Visibility="{Binding ElementName=ToggleButton, Path=IsChecked, Converter={StaticResource BoolToVisibilityConverter}}"
 						Content="Add"/>
 					<Button
 						IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
 						Style="{StaticResource ButtonStyle}"
 						Command="{Binding CMDRemoveDirectory}"
+						Visibility="{Binding ElementName=ToggleButton, Path=IsChecked, Converter={StaticResource BoolToVisibilityConverter}}"
 						Content="Remove"/>
 				</WrapPanel>
+				<ListView
+					Style="{StaticResource ListViewStyle}"
+					ItemsSource="{Binding Path=Profile.DirectoriesExcluded, Mode=OneWay}"
+					SelectedItem="{Binding Path=SelectedDirectory, Mode=TwoWay}"
+					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"/>
 			</WrapPanel>
 			<WrapPanel
 				Orientation="Vertical">
-				<TextBlock
-					Style="{StaticResource TextBlockStyle1}"
-					Text="Files Excluded"/>
-				<ListView
-					Style="{StaticResource ListViewStyle}"
-					ItemsSource="{Binding Path=Profil.FilesExcluded, Mode=OneWay}"
-					SelectedItem="{Binding Path=SelectedFile, Mode=TwoWay}"
-					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"/>
-				<WrapPanel
-					Visibility="{Binding ElementName=ToggleButton, Path=IsChecked, Converter={StaticResource BoolToVisibilityConverter}}">
-					<TextBox
-						Style="{StaticResource TextBoxStyle}"
-						IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
-						Text="{Binding Path=NewFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+				<WrapPanel>
+					<TextBlock
+						Style="{StaticResource TextBlockStyle1}"
+						Text="Files Excluded"/>
 					<Button
 						Style="{StaticResource ButtonStyle}"
 						IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
 						Command="{Binding CMDAddFile}"
+						Visibility="{Binding ElementName=ToggleButton, Path=IsChecked, Converter={StaticResource BoolToVisibilityConverter}}"
 						Content="Add"/>
 					<Button
 						Style="{StaticResource ButtonStyle}"
 						IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"
 						Command="{Binding CMDRemoveFile}"
+						Visibility="{Binding ElementName=ToggleButton, Path=IsChecked, Converter={StaticResource BoolToVisibilityConverter}}"
 						Content="Remove"/>
 				</WrapPanel>
-			</WrapPanel>
+				<ListView
+					Style="{StaticResource ListViewStyle}"
+					ItemsSource="{Binding Path=Profile.FilesExcluded, Mode=OneWay}"
+					SelectedItem="{Binding Path=SelectedFile, Mode=TwoWay}"
+					IsEnabled="{Binding ElementName=ToggleButton, Path=IsChecked}"/>
+				</WrapPanel>
 			<WrapPanel
 				Orientation="Horizontal">
 				<ToggleButton
 					Name="ToggleButton"
 					Style="{StaticResource ToggleButtonStyle}"
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked, Converter={StaticResource BoolToButtonNameConverter}}"
-					IsEnabled="{Binding Path=Profil.IsModifiable, Mode=OneWay}"
-					Command="{Binding Path=CMDSave, Mode=OneTime}"
+					IsEnabled="{Binding Path=Profile.IsModifiable, Mode=OneWay}"
+					Command="{Binding Path=CMDSaveProfile, Mode=OneTime}"
 					CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"/>
 				<Button
 					Style="{StaticResource ButtonStyle}"
 					Content="Remove"
-					IsEnabled="{Binding Path=Profil.IsModifiable, Mode=OneWay}"
-					Click="Button_Click"/>
+					IsEnabled="{Binding Path=Profile.IsModifiable, Mode=OneWay}"
+					Click="Button_Click_RemoveProfile"/>
 			</WrapPanel>
 		</StackPanel>
 	</ScrollViewer>

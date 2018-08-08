@@ -7,7 +7,7 @@
         xmlns:views="clr-namespace:Mnemosyne.Desktop.Views"
 		xmlns:viewmodels="clr-namespace:Mnemosyne.Desktop.ViewModels"
         mc:Ignorable="d"
-        Title="{Binding Path=Profil.Name}"
+        Title="{Binding Path=Profile.Name}"
 		Background="{StaticResource WindowBackgroundColor}"
 		Width="800"
 		Height="600"
@@ -25,8 +25,8 @@
 					Text="Name"/>
 				<TextBox
 					Style="{StaticResource TextBoxStyle}"
-					Text="{Binding Path=Profil.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-					TextChanged="TextBox_TextChanged_1"/>
+					Text="{Binding Path=Profile.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+					TextChanged="TextBox_TextChanged_CheckCMDCreateProfile"/>
 			</WrapPanel>
 			<WrapPanel>
 				<TextBlock
@@ -34,8 +34,8 @@
 					Text="Buffer Length"/>
 				<TextBox
 					Style="{StaticResource TextBoxStyle}"
-					Text="{Binding Path=Profil.BufferLength, Mode=TwoWay}"
-					TextChanged="TextBox_TextChanged"/>
+					Text="{Binding Path=Profile.BufferLength, Mode=TwoWay}"
+					TextChanged="TextBox_TextChanged_CheckDigitInput"/>
 			</WrapPanel>
 			<WrapPanel>
 				<TextBlock
@@ -43,7 +43,7 @@
 					Text="Creation Time"/>
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.CreationTime, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.CreationTime, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -52,7 +52,7 @@
 					Text="Last Acces Time"/>
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.LastAccessTime, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.LastAccessTime, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -61,7 +61,7 @@
 					Text="Last Write Time"/>
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.LastWriteTime, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.LastWriteTime, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -70,7 +70,7 @@
 					Text="Attributes"/>
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.Attributes, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.Attributes, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel>
@@ -79,23 +79,15 @@
 					Text="Access Control"/>
 				<ToggleButton
 					Content="{Binding RelativeSource={RelativeSource Mode=Self}, Path=IsChecked}"
-					IsChecked="{Binding Path=Profil.AccessControl, Mode=TwoWay}"
+					IsChecked="{Binding Path=Profile.AccessControl, Mode=TwoWay}"
 					Style="{StaticResource ToggleButtonStyle}"/>
 			</WrapPanel>
 			<WrapPanel
 				Orientation="Vertical">
-				<TextBlock
-					Style="{StaticResource TextBlockStyle1}"
-					Text="Directories Excluded"/>
-				<ListView
-					SelectionMode="Single"
-					Style="{StaticResource ListViewStyle}"
-					ItemsSource="{Binding Path=Profil.DirectoriesExcluded, Mode=OneWay}"
-					SelectedItem="{Binding Path=SelectedDirectory, Mode=TwoWay}"/>
 				<WrapPanel>
-					<TextBox
-						Style="{StaticResource TextBoxStyle}"
-						Text="{Binding Path=NewDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+					<TextBlock
+						Style="{StaticResource TextBlockStyle1}"
+						Text="Directories Excluded"/>
 					<Button
 						Style="{StaticResource ButtonStyle}"
 						Command="{Binding CMDAddDirectory}"
@@ -105,20 +97,18 @@
 						Command="{Binding CMDRemoveDirectory}"
 						Content="Remove"/>
 				</WrapPanel>
+				<ListView
+					SelectionMode="Single"
+					Style="{StaticResource ListViewStyle}"
+					ItemsSource="{Binding Path=Profile.DirectoriesExcluded, Mode=OneWay}"
+					SelectedItem="{Binding Path=SelectedDirectory, Mode=TwoWay}"/>
 			</WrapPanel>
 			<WrapPanel
 				Orientation="Vertical">
-				<TextBlock
-					Style="{StaticResource TextBlockStyle1}"
-					Text="Files Excluded"/>
-				<ListView
-					Style="{StaticResource ListViewStyle}"
-					ItemsSource="{Binding Path=Profil.FilesExcluded, Mode=OneWay}"
-					SelectedItem="{Binding Path=SelectedFile, Mode=TwoWay}"/>
 				<WrapPanel>
-					<TextBox
-						Style="{StaticResource TextBoxStyle}"
-						Text="{Binding Path=NewFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+					<TextBlock
+						Style="{StaticResource TextBlockStyle1}"
+						Text="Files Excluded"/>
 					<Button
 						Style="{StaticResource ButtonStyle}"
 						Command="{Binding CMDAddFile}"
@@ -128,14 +118,18 @@
 						Command="{Binding CMDRemoveFile}"
 						Content="Remove"/>
 				</WrapPanel>
+				<ListView
+					Style="{StaticResource ListViewStyle}"
+					ItemsSource="{Binding Path=Profile.FilesExcluded, Mode=OneWay}"
+					SelectedItem="{Binding Path=SelectedFile, Mode=TwoWay}"/>
 			</WrapPanel>
 			<WrapPanel
 				Orientation="Horizontal">
 				<Button
-					Command="{Binding CMDCreate, Mode=OneTime}"
+					Command="{Binding CMDCreateProfile, Mode=OneTime}"
 					Style="{StaticResource ButtonStyle}"
 					Content="Create"
-					Click="Button_Click"/>
+					Click="Button_Click_Close"/>
 			</WrapPanel>
 		</StackPanel>
 	</ScrollViewer>

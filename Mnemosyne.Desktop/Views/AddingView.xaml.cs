@@ -1,37 +1,29 @@
 ﻿using Mnemosyne.Desktop.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace Mnemosyne.Desktop.Views
 {
-	/// <summary>
-	/// Logique d'interaction pour ProfileAddingWindow.xaml
-	/// </summary>
 	public partial class AddingView : Window
 	{
-		public AddingView()
+		AddingViewModel addingViewModel;
+
+		public AddingView(string sourcePath)
 		{
 			InitializeComponent();
+
+			addingViewModel = (AddingViewModel)DataContext;
+
+			addingViewModel.SourcePath = sourcePath;
 		}
 
-		private void Button_Click(object sender, RoutedEventArgs e)
+		private void Button_Click_Close(object sender, RoutedEventArgs e)
 		{
 			Close();
 		}
 
-		private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+		private void TextBox_TextChanged_CheckDigitInput(object sender, TextChangedEventArgs e)
 		{
 			var texBox = (TextBox)sender;
 
@@ -44,9 +36,9 @@ namespace Mnemosyne.Desktop.Views
 			}
 		}
 
-		private void TextBox_TextChanged_1(object sender, TextChangedEventArgs e)
+		private void TextBox_TextChanged_CheckCMDCreateProfile(object sender, TextChangedEventArgs e)
 		{
-			((AddingViewModel)DataContext).CMDCreate.Notify();
+			addingViewModel.CMDCreateProfile.Notify();
 		}
 	}
 }

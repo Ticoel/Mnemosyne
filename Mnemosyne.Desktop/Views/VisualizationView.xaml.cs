@@ -1,29 +1,25 @@
-﻿using System.Linq;
+﻿using Mnemosyne.Desktop.ViewModels;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Mnemosyne.Desktop.ViewModels;
 
 namespace Mnemosyne.Desktop.Views
 {
-	/// <summary>
-	/// Logique d'interaction pour ProfilWindow.xaml
-	/// </summary>
 	public partial class VisualizationView : Window
     {
-		private VisualizationViewModel VisualizationViewModel;
+		private VisualizationViewModel visualizationViewModel;
 
-        public VisualizationView(ProfileViewModel profil)
+        public VisualizationView(string sourcePath, ProfileViewModel profil)
         {
             InitializeComponent();
 
-			VisualizationViewModel = ((VisualizationViewModel)DataContext);
+			visualizationViewModel = ((VisualizationViewModel)DataContext);
 
-			VisualizationViewModel.Profil = profil;
-
-			Closed += (sender, e) => { if (VisualizationViewModel.Profil.IsModifiable) VisualizationViewModel.CMDSave.Execute(false); };
+			visualizationViewModel.SourcePath = sourcePath;
+			visualizationViewModel.Profile = profil;
 		}
 
-		private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+		private void TextBox_TextChanged_CheckDigitInput(object sender, TextChangedEventArgs e)
 		{
 			var texBox = (TextBox)sender;
 
@@ -36,9 +32,9 @@ namespace Mnemosyne.Desktop.Views
 			}
 		}
 
-		private void Button_Click(object sender, RoutedEventArgs e)
+		private void Button_Click_RemoveProfile(object sender, RoutedEventArgs e)
 		{
-			VisualizationViewModel.Remove();
+			visualizationViewModel.CMDRemoveProfile.Execute(null);
 			Close();
 		}
 	}

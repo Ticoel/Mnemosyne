@@ -27,6 +27,8 @@ namespace Mnemosyne.Desktop.ViewModels
 					Notify(nameof(SourcePath));
 					CMDStart.Notify();
 					CMDSelectTarget.Notify();
+					CMDAddProfile.Notify();
+					CMDViewProfile.Notify();
 				}
 			}
 		}
@@ -41,6 +43,8 @@ namespace Mnemosyne.Desktop.ViewModels
 					targetPath = value;
 					Notify(nameof(TargetPath));
 					CMDStart.Notify();
+					CMDAddProfile.Notify();
+					CMDViewProfile.Notify();
 				}
 			}
 		}
@@ -117,8 +121,8 @@ namespace Mnemosyne.Desktop.ViewModels
 					{
 						CMDSelectSource.Notify();
 						CMDSelectTarget.Notify();
-						CMDViewProfil.Notify();
-						CMDAdd.Notify();
+						CMDViewProfile.Notify();
+						CMDAddProfile.Notify();
 						CMDStart.Notify();
 						CMDCancel.Notify();
 					}));
@@ -161,19 +165,6 @@ namespace Mnemosyne.Desktop.ViewModels
 				{
 					endTime = value;
 					Notify(nameof(EndTime));
-				}
-			}
-		}
-
-		public DateTime EstimateEndTime
-		{
-			get => estimateEndTime;
-			set
-			{
-				if (value != estimateEndTime)
-				{
-					estimateEndTime = value;
-					Notify(nameof(EstimateEndTime));
 				}
 			}
 		}
@@ -221,7 +212,7 @@ namespace Mnemosyne.Desktop.ViewModels
 					Notify(nameof(CurrentProfil));
 					System.Windows.Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)(() =>
 					{
-						CMDViewProfil.Notify();
+						CMDViewProfile.Notify();
 					}));
 				}
 			}
@@ -229,8 +220,8 @@ namespace Mnemosyne.Desktop.ViewModels
 
 		public RelayAction CMDSelectSource { get; }
 		public RelayAction CMDSelectTarget { get; }
-		public RelayAction CMDViewProfil { get; }
-		public RelayAction CMDAdd { get; }
+		public RelayAction CMDViewProfile { get; }
+		public RelayAction CMDAddProfile { get; }
 		public RelayAction CMDStart { get; }
 		public RelayAction CMDCancel { get; }
 
@@ -244,7 +235,6 @@ namespace Mnemosyne.Desktop.ViewModels
 		private string output;
 		private bool isRunning;
 		private CancellationTokenSource cancellationTokenSource;
-		private System.Timers.Timer timer;
 		private DateTime startTime;
 		private TimeSpan elapsedTime;
 		private DateTime endTime;
@@ -252,7 +242,6 @@ namespace Mnemosyne.Desktop.ViewModels
 		private TimeSpan remainingTime;
 		private long copiedByte;
 		private long byteToCopy;
-		private DateTime estimateEndTime;
 		private ProfileViewModel currentProfil;
 
 		public MainViewModel()
@@ -262,13 +251,10 @@ namespace Mnemosyne.Desktop.ViewModels
 
 			CMDSelectSource = new RelayAction((param) => SelectSource(), (param) => !IsRunning);
 			CMDSelectTarget = new RelayAction((param) => SelectTarget(), (param) => !IsRunning && SourcePath != null);
-			CMDViewProfil = new RelayAction((param) => { OpenProfilWindow(); }, (param) => !IsRunning && CurrentProfil != null);
-			CMDAdd = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => !IsRunning);
-			CMDStart = new RelayAction(async (param) => { await Start(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null);
+			CMDViewProfile = new RelayAction((param) => { OpenProfilWindow(); }, (param) => !IsRunning && CurrentProfil != null && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
+			CMDAddProfile = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
+			CMDStart = new RelayAction(async (param) => { await Start(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
 			CMDCancel = new RelayAction((param) => { Cancel(); }, (param) => IsRunning);
-
-			timer = new System.Timers.Timer(100);		
-			timer.Elapsed += (sender, e) => { ElapsedTime = e.SignalTime - StartTime; Speed = copiedByte / ElapsedTime.TotalSeconds; RemainingTime = TimeSpan.FromSeconds((byteToCopy - copiedByte) / Speed); EstimateEndTime = e.SignalTime + ElapsedTime; };
 		}
 
 		private void SelectSource()
@@ -293,19 +279,66 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		private async Task Count(DirectoryInfo parentDirectory)
+		private bool A(FileInfo fileInfo)
 		{
-			var childFiles = parentDirectory.EnumerateFiles();
-			var childFolders = parentDirectory.EnumerateDirectories();
+			var relative = fileInfo.FullName.Substring(SourcePath.Length + 1);
+			return !CurrentProfil.FilesExcluded.Contains(relative);
+		}
 
-			FileCount += childFiles.Count();
-			FolderCount += childFolders.Count();
+		private bool B(DirectoryInfo directoryInfo)
+		{
+			var relative = directoryInfo.FullName.Substring(SourcePath.Length + 1);
+			return !CurrentProfil.DirectoriesExcluded.Contains(relative);
+		}
 
-			foreach (var childFile in childFiles)
-				byteToCopy += childFile.Length;
+		private async Task Count(DirectoryInfo sourceParentDirectory, DirectoryInfo targetParentDirectory)
+		{
+			var sourceChildFiles = sourceParentDirectory.EnumerateFiles();
+			var sourceChildDirectories = sourceParentDirectory.EnumerateDirectories();
 
-			foreach (var childFolder in childFolders)
-				await Count(childFolder);
+			var targetChildFiles = targetParentDirectory?.EnumerateFiles() ?? new List<FileInfo>();
+			var targetChildDirectories = targetParentDirectory?.EnumerateDirectories() ?? new List<DirectoryInfo>();
+
+			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(A);
+			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(A);
+			var filesToCopy = sourceChildFiles.Except(targetChildFiles, new FileComparer()).Where(A);
+
+			var directoriesToDelete = targetChildDirectories.Except(sourceChildDirectories, new DirectoryComparer()).Where(B);
+			var directoriesToUpdate = sourceChildDirectories.Intersect(targetChildDirectories, new DirectoryComparer()).Where(B);
+			var directoriesToCopy = sourceChildDirectories.Except(targetChildDirectories, new DirectoryComparer()).Where(B);
+
+			FileCount += filesToDelete.Count();
+			FolderCount += directoriesToDelete.Count();
+
+			foreach (var fileToUpdate in filesToUpdate)
+			{
+				FileCount++;
+				byteToCopy += fileToUpdate.Length;
+			}
+
+			foreach (var fileToCopy in filesToCopy)
+			{
+				FileCount++;
+				byteToCopy += fileToCopy.Length;
+			}
+
+			foreach (var directoryToUpdate in directoriesToUpdate)
+			{
+				var relative = directoryToUpdate.FullName.Substring(SourcePath.Length + 1);
+				var absolute = Path.Combine(TargetPath, relative);
+				var targetDirectory = new DirectoryInfo(absolute);
+
+				FolderCount++;
+
+				await Count(directoryToUpdate, targetDirectory);
+			}
+
+			foreach (var directoryToCopy in directoriesToCopy)
+			{
+				FolderCount++;
+
+				await Count(directoryToCopy, null);
+			}
 		}
 
 		public void GetProfils()
@@ -322,9 +355,7 @@ namespace Mnemosyne.Desktop.ViewModels
 								select profil;
 
 			if (defaultProfil.Count() < 1)
-			{
 				Profils.Add(ProfileViewModel.CreateDefault(false));
-			}
 
 			var files = directory.EnumerateFiles();
 
@@ -365,25 +396,23 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 
 			if (CurrentProfil == null)
-			{
 				CurrentProfil = defaultProfil.First();
-			}
 		}
 
 		private void OpenProfilWindow()
 		{
-			var win = new VisualizationView(CurrentProfil);
+			var win = new VisualizationView(SourcePath, CurrentProfil);
 			win.Closed += (sender, e) => { GetProfils(); };
 			win.ShowDialog();
 		}
 
 		private void OpenAddingProfileWindow()
 		{
-			var view = new AddingView();
+			var view = new AddingView(SourcePath);
 			view.ShowDialog();
 		}
 
-		private void CopyFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
+		private void CopyData(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
 		{
 			try
 			{
@@ -413,7 +442,7 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		private void UpdateFile(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
+		private void UpdateData(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
 		{
 			try
 			{
@@ -453,159 +482,210 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		private async Task Dispatch(DirectoryInfo parentDirectory, CancellationToken cancellationToken)
+		private void UpdateMetadata(FileInfo sourceFile, FileInfo targetFile)
 		{
-			var childItems = parentDirectory.EnumerateFileSystemInfos();
+			if (CurrentProfil.CreationTime)
+				targetFile.CreationTime = sourceFile.CreationTime;
 
-			foreach (var sourceChildItem in childItems)
+			if (CurrentProfil.LastAccessTime)
+				targetFile.LastAccessTime = sourceFile.LastAccessTime;
+
+			if (CurrentProfil.LastWriteTime)
+				targetFile.LastWriteTime = sourceFile.LastWriteTime;
+
+			if (CurrentProfil.Attributes)
+				targetFile.Attributes = sourceFile.Attributes;
+
+			if (CurrentProfil.AccessControl)
+				targetFile.SetAccessControl(sourceFile.GetAccessControl());
+		}
+
+		private void UpdateMetadata(DirectoryInfo sourceDirectory, DirectoryInfo targetDirectory)
+		{
+			if (CurrentProfil.CreationTime)
+				targetDirectory.CreationTime = sourceDirectory.CreationTime;
+
+			if (CurrentProfil.LastAccessTime)
+				targetDirectory.LastAccessTime = sourceDirectory.LastAccessTime;
+
+			if (CurrentProfil.LastWriteTime)
+				targetDirectory.LastWriteTime = sourceDirectory.LastWriteTime;
+
+			if (CurrentProfil.Attributes)
+				targetDirectory.Attributes = sourceDirectory.Attributes;
+
+			if (CurrentProfil.AccessControl)
+				targetDirectory.SetAccessControl(sourceDirectory.GetAccessControl());
+		}
+
+		private async Task Dispatch(DirectoryInfo sourceParentDirectory, DirectoryInfo targetParentDirectory, CancellationToken cancellationToken)
+		{
+			var sourceChildFiles = sourceParentDirectory.EnumerateFiles();
+			var sourceChildDirectories= sourceParentDirectory.EnumerateDirectories();
+			var targetChildFiles = targetParentDirectory.EnumerateFiles();
+			var targetChildDirectories = targetParentDirectory.EnumerateDirectories();
+			
+			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(A);
+			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(A);
+			var filesToCopy = sourceChildFiles.Except(targetChildFiles, new FileComparer()).Where(A);
+
+			var directoriesToDelete = targetChildDirectories.Except(sourceChildDirectories, new DirectoryComparer()).Where(B);
+			var directoriesToUpdate = sourceChildDirectories.Intersect(targetChildDirectories, new DirectoryComparer()).Where(B);
+			var directoriesToCopy = sourceChildDirectories.Except(targetChildDirectories, new DirectoryComparer()).Where(B);
+
+			foreach (var fileToDelete in filesToDelete)
 			{
-				var relative = sourceChildItem.FullName.Substring(SourcePath.Length + 1);
-				var absolute = Path.Combine(TargetPath, relative);
+				fileToDelete.Delete();
 
 				ItemPosition++;
 
-				if (sourceChildItem is FileInfo sourceChildFile)
-				{
-					var targetChildFile = new FileInfo(absolute);
-
-					if (targetChildFile.Exists)
-					{
-						if (sourceChildFile.Length == targetChildFile.Length)
-						{
-							Output = "UPDATE " + sourceChildItem.Name;
-
-							try
-							{
-								UpdateFile(sourceChildFile.OpenRead(), targetChildFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite), cancellationToken);
-							}
-							catch (OperationCanceledException)
-							{
-								targetChildFile.Delete();
-								return;
-							}
-						}
-						else
-						{
-							Output = "CHANGE " + sourceChildItem.Name;
-
-							try
-							{
-								var targetChildFileStream = targetChildFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-
-								targetChildFileStream.SetLength(sourceChildFile.Length);
-								targetChildFileStream.Flush();
-
-								UpdateFile(sourceChildFile.OpenRead(), targetChildFileStream, cancellationToken);
-							}
-							catch (OperationCanceledException)
-							{
-								targetChildFile.Delete();
-								return;
-							}
-						}
-					}
-					else
-					{
-						Output = "CREATE " + sourceChildItem.Name;
-
-						try
-						{
-							CopyFile(sourceChildFile.OpenRead(), targetChildFile.Open(FileMode.Create, FileAccess.Write, FileShare.Write), cancellationToken);
-						}
-						catch (OperationCanceledException)
-						{
-							targetChildFile.Delete();
-							return;
-						}
-					}
-
-					if (CurrentProfil.CreationTime)
-						targetChildFile.CreationTime = sourceChildFile.CreationTime;
-
-					if (CurrentProfil.LastAccessTime)
-						targetChildFile.LastAccessTime = sourceChildFile.LastAccessTime;
-
-					if (CurrentProfil.LastWriteTime)
-						targetChildFile.LastWriteTime = sourceChildFile.LastWriteTime;
-
-					if(CurrentProfil.Attributes)
-						targetChildFile.Attributes = sourceChildFile.Attributes;
-
-					if (CurrentProfil.AccessControl)
-					{
-						var fileSecurity = sourceChildFile.GetAccessControl();
-						targetChildFile.SetAccessControl(fileSecurity);
-					}
-				}
-				else if (sourceChildItem is DirectoryInfo sourceChildDirectory)
-				{
-					DirectoryInfo targetChildDirectory = null;
-
-					if (!Directory.Exists(absolute))
-						targetChildDirectory = Directory.CreateDirectory(absolute);
-					else
-						targetChildDirectory = new DirectoryInfo(absolute);
-
-					if (CurrentProfil.CreationTime)
-						targetChildDirectory.CreationTime = sourceChildDirectory.CreationTime;
-
-					if (CurrentProfil.LastAccessTime)
-						targetChildDirectory.LastAccessTime = sourceChildDirectory.LastAccessTime;
-
-					if (CurrentProfil.LastWriteTime)
-						targetChildDirectory.LastWriteTime = sourceChildDirectory.LastWriteTime;
-
-					if (CurrentProfil.Attributes)
-						targetChildDirectory.Attributes = sourceChildDirectory.Attributes;
-
-					if (CurrentProfil.AccessControl)
-					{
-						var fileSecurity = sourceChildDirectory.GetAccessControl();
-						targetChildDirectory.SetAccessControl(fileSecurity);
-					}
-
-					await Dispatch(sourceChildDirectory, cancellationToken);
-				}
+				Output = "DELETE " + fileToDelete.Name;
 			}
+
+			foreach (var fileToUpdate in filesToUpdate)
+			{
+				var relative = fileToUpdate.FullName.Substring(SourcePath.Length + 1);
+				var absolute = Path.Combine(TargetPath, relative);
+				var targetChildFile = new FileInfo(absolute);
+
+				try
+				{
+					var targetChildFileStream = targetChildFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+
+					targetChildFileStream.SetLength(fileToUpdate.Length);
+					targetChildFileStream.Flush();
+
+					UpdateData(fileToUpdate.OpenRead(), targetChildFileStream, cancellationToken);
+				}
+				catch (OperationCanceledException)
+				{
+					targetChildFile.Delete();
+					return;
+				}
+
+				UpdateMetadata(fileToUpdate, targetChildFile);
+
+				ItemPosition++;
+
+				Output = "UPDATE " + fileToUpdate.Name;
+			}
+
+			foreach (var fileToCopy in filesToCopy)
+			{
+				var relative = fileToCopy.FullName.Substring(SourcePath.Length + 1);
+				var absolute = Path.Combine(TargetPath, relative);
+				var targetChildFile = new FileInfo(absolute);
+
+				try
+				{
+					CopyData(fileToCopy.OpenRead(), targetChildFile.Open(FileMode.Create, FileAccess.Write, FileShare.Write), cancellationToken);
+				}
+				catch (OperationCanceledException)
+				{
+					targetChildFile.Delete();
+					return;
+				}
+
+				UpdateMetadata(fileToCopy, targetChildFile);
+
+				ItemPosition++;
+
+				Output = "COPY " + fileToCopy.Name;
+			}
+
+			foreach (var directoryToDelete in directoriesToDelete)
+			{
+				directoryToDelete.Delete(true);
+
+				ItemPosition++;
+
+				Output = "DELETE " + directoryToDelete.Name;
+			}
+
+			foreach (var directoryToUpdate in directoriesToUpdate)
+			{
+				var relative = directoryToUpdate.FullName.Substring(SourcePath.Length + 1);
+				var absolute = Path.Combine(TargetPath, relative);
+				var targetChildDirectory = new DirectoryInfo(absolute);
+
+				UpdateMetadata(directoryToUpdate, targetChildDirectory);
+
+				ItemPosition++;
+
+				Output = "UPDATE " + directoryToUpdate.Name;
+
+				await Dispatch(directoryToUpdate, targetChildDirectory, cancellationToken);
+			}
+
+			foreach (var directoryToCopy in directoriesToCopy)
+			{
+				var relative = directoryToCopy.FullName.Substring(SourcePath.Length + 1);
+				var absolute = Path.Combine(TargetPath, relative);
+				var targetChildDirectory = new DirectoryInfo(absolute);
+
+				targetChildDirectory.Create();
+
+				UpdateMetadata(directoryToCopy, targetChildDirectory);
+
+				ItemPosition++;
+
+				Output = "COPY " + directoryToCopy.Name;
+
+				await Dispatch(directoryToCopy, targetChildDirectory, cancellationToken);
+			}
+		}
+
+		private void ComputeTime(object state)
+		{
+			ElapsedTime = DateTime.Now - StartTime;
+
+			if (ElapsedTime.TotalSeconds > 0)
+				Speed = copiedByte / ElapsedTime.TotalSeconds;
+
+			if (Speed > 0)
+				RemainingTime = TimeSpan.FromSeconds((byteToCopy - copiedByte) / Speed);
 		}
 
 		private async Task Start()
 		{
 			async Task main()
 			{
-				Debug.WriteLine("START");
-
 				FileCount = FolderCount = ItemPosition = 0;
 				copiedByte = byteToCopy = 0;
 
 				var sourceDirectory = new DirectoryInfo(SourcePath);
+				var targetDirectory = new DirectoryInfo(TargetPath);
 
 				cancellationTokenSource = new CancellationTokenSource();
 
 				IsRunning = true;
 
-				Output = "Count";
+				Output = "COUNT";
 
-				await Count(sourceDirectory);
+				await Count(sourceDirectory, targetDirectory);
+
+				Debug.WriteLine(ItemCount);
 
 				StartTime = DateTime.Now;
 
-				timer.Start();
+				var timer = new System.Threading.Timer(ComputeTime, null, 0, 100);
 
-				await Dispatch(sourceDirectory, cancellationTokenSource.Token);
+				await Dispatch(sourceDirectory, targetDirectory, cancellationTokenSource.Token);
 
-				timer.Stop();
+				Debug.WriteLine(ItemPosition);
+
+				timer.Dispose();
 
 				EndTime = DateTime.Now;
 
 				if (cancellationTokenSource.IsCancellationRequested)
-					Output = "Stoped";
+					Output = "STOPPED";
+				else
+					Output = "FINISHED";
 
 				cancellationTokenSource.Dispose();
 
 				IsRunning = false;
-
-				Output = "End";
 			}
 
 			await Task.Run(main);
@@ -614,7 +694,6 @@ namespace Mnemosyne.Desktop.ViewModels
 		private void Cancel()
 		{
 			cancellationTokenSource.Cancel();
-			Debug.WriteLine("Stop");
 		}
 	}
 }

@@ -1,42 +1,35 @@
 ﻿using Mnemosyne.Desktop.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Windows.Forms;
-using System.Diagnostics;
 
 namespace Mnemosyne.Desktop.ViewModels
 {
 	public sealed class AddingViewModel : CommonViewModel
 	{
-		public ProfileViewModel Profil
+		public string SourcePath
 		{
-			get => profil;
+			get => sourcePath;
 			set
 			{
-				if (value != profil)
+				if (value != sourcePath)
 				{
-					profil = value;
-					Notify(nameof(Profil));
-					CMDCreate.Notify();
+					sourcePath = value;
+					Notify(nameof(SourcePath));
 				}
 			}
 		}
 
-		public string NewDirectory
+		public ProfileViewModel Profile
 		{
-			get => newDirectory;
+			get => profile;
 			set
 			{
-				if (value != newDirectory)
+				if (value != profile)
 				{
-					newDirectory = value;
-					Notify(nameof(NewDirectory));
-					CMDAddDirectory.Notify();
+					profile = value;
+					Notify(nameof(Profile));
+					CMDCreateProfile.Notify();
 				}
 			}
 		}
@@ -55,20 +48,6 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		public string NewFile
-		{
-			get => newFile;
-			set
-			{
-				if (value != newFile)
-				{
-					newFile = value;
-					Notify(nameof(NewFile));
-					CMDAddFile.Notify();
-				}
-			}
-		}
-
 		public string SelectedFile
 		{
 			get => selectedFile;
@@ -83,44 +62,88 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-
 		public RelayAction CMDAddDirectory { get; }
 		public RelayAction CMDRemoveDirectory { get; }
 		public RelayAction CMDAddFile { get; }
 		public RelayAction CMDRemoveFile { get; }
-		public RelayAction CMDCreate { get; }
+		public RelayAction CMDCreateProfile { get; }
 
-		private ProfileViewModel profil;
-		private string newDirectory;
+		private string sourcePath;
+		private ProfileViewModel profile;
 		private string selectedDirectory;
-		private string newFile;
 		private string selectedFile;
+		private string path;
 
 		public AddingViewModel()
 		{
-			CMDAddDirectory = new RelayAction((param) => Profil.DirectoriesExcluded.Add(NewDirectory), (param) => !string.IsNullOrWhiteSpace(NewDirectory));
-			CMDRemoveDirectory = new RelayAction((param) => Profil.DirectoriesExcluded.Remove(SelectedDirectory), (param) => SelectedDirectory != null);
-			CMDAddFile = new RelayAction((param) => Profil.FilesExcluded.Add(NewFile), (param) => !string.IsNullOrWhiteSpace(NewFile));
-			CMDRemoveFile = new RelayAction((param) => Profil.FilesExcluded.Remove(SelectedFile), (param) => SelectedFile != null);
-			CMDCreate = new RelayAction((param) => Create(), (param) => CheckExistence());
+			CMDAddDirectory = new RelayAction((param) => AddDirectory(), (param) => true);
+			CMDRemoveDirectory = new RelayAction((param) => Profile.DirectoriesExcluded.Remove(SelectedDirectory), (param) => SelectedDirectory != null);
+			CMDAddFile = new RelayAction((param) => AddFile(), (param) => true);
+			CMDRemoveFile = new RelayAction((param) => Profile.FilesExcluded.Remove(SelectedFile), (param) => SelectedFile != null);
+			CMDCreateProfile = new RelayAction((param) => CreateProfile(), (param) => CheckProfileExistence());
 
-			Profil = ProfileViewModel.CreateDefault(true);
-			Profil.Name = string.Empty;
+			Profile = ProfileViewModel.CreateDefault(true);
+			Profile.Name = string.Empty;
 		}
 
-		private void Create()
+		private void AddDirectory()
 		{
-			var serializer = new XmlSerializer(typeof(ProfileViewModel));
+			FolderBrowserDialog window = new FolderBrowserDialog();
 
-			using (var stream = new FileStream(Path.Combine(Application.LocalUserAppDataPath, "Profiles", Profil.Name + ".xml"), FileMode.Create, FileAccess.Write, FileShare.Write))
+			if (window.ShowDialog() == DialogResult.OK)
 			{
-				serializer.Serialize(stream, Profil);
+				var path = window.SelectedPath;
+
+				if (path.StartsWith(SourcePath))
+				{
+					var relative = window.SelectedPath.Substring(SourcePath.Length + 1);
+					Profile.DirectoriesExcluded.Add(relative);
+				}
 			}
 		}
 
-		private bool CheckExistence()
+		private void AddFile()
 		{
-			return !File.Exists(Path.Combine(Application.LocalUserAppDataPath, "Profiles", Profil.Name + ".xml"));
+			OpenFileDialog window = new OpenFileDialog
+			{
+				InitialDirectory = SourcePath
+			};
+
+			if (window.ShowDialog() == DialogResult.OK)
+			{
+				var path = window.FileName;
+
+				if (path.StartsWith(SourcePath))
+				{
+					var relative = path.Substring(SourcePath.Length + 1);
+					Profile.FilesExcluded.Add(relative);
+				}
+			}
+		}
+
+		private void CreateProfile()
+		{
+			var serializer = new XmlSerializer(typeof(ProfileViewModel));
+
+			using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Write))
+			{
+				serializer.Serialize(stream, Profile);
+			}
+		}
+
+		private bool CheckProfileExistence()
+		{
+			if (string.IsNullOrWhiteSpace(Profile.Name))
+				return false;
+
+			var filename = Profile.Name + ".xml";
+
+			foreach (var invalidChar in Path.GetInvalidFileNameChars())
+				filename = filename.Replace(invalidChar, '_');
+
+			path = Path.Combine(Application.LocalUserAppDataPath, "Profiles", filename);
+
+			return !File.Exists(path);
 		}
 	}
 }
