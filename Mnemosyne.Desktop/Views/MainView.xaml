@@ -58,7 +58,7 @@
 						Style="{StaticResource TextBlockStyle1}"
 						Text="using"/>
 					<ComboBox
-						ItemsSource="{Binding Path=Profils, Mode=OneWay}"
+						ItemsSource="{Binding Path=Profiles, Mode=OneWay}"
 						SelectedItem="{Binding Path=CurrentProfil, Mode=TwoWay}"
 						Style="{StaticResource ComboBoxStyle}"
 						IsEnabled="{Binding Path=IsRunning, Converter={StaticResource InverseBoolConverter}}"

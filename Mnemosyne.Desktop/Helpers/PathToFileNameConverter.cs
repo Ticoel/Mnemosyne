@@ -11,7 +11,7 @@ namespace Mnemosyne.Desktop.Helpers
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
 			if (value is string path)
-				return Path.GetFileName(path);
+				return new DirectoryInfo(path).Name;
 			else if (parameter is string label)
 				return label;
 			else

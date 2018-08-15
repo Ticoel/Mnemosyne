@@ -6,6 +6,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -195,8 +197,7 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		public ObservableCollection<ProfileViewModel> Profils { get; }
-		public ObservableCollection<string> ProfilsPaths { get; }
+		public ObservableCollection<ProfileViewModel> Profiles { get; }
 
 		public ProfileViewModel CurrentProfil
 		{
@@ -246,14 +247,13 @@ namespace Mnemosyne.Desktop.ViewModels
 
 		public MainViewModel()
 		{
-			Profils = new ObservableCollection<ProfileViewModel>();
-			ProfilsPaths = new ObservableCollection<string>();
+			Profiles = new ObservableCollection<ProfileViewModel>();
 
 			CMDSelectSource = new RelayAction((param) => SelectSource(), (param) => !IsRunning);
 			CMDSelectTarget = new RelayAction((param) => SelectTarget(), (param) => !IsRunning && SourcePath != null);
 			CMDViewProfile = new RelayAction((param) => { OpenProfilWindow(); }, (param) => !IsRunning && CurrentProfil != null && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
 			CMDAddProfile = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
-			CMDStart = new RelayAction(async (param) => { await Start(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
+			CMDStart = new RelayAction(async (param) => await Start(), (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
 			CMDCancel = new RelayAction((param) => { Cancel(); }, (param) => IsRunning);
 		}
 
@@ -264,7 +264,12 @@ namespace Mnemosyne.Desktop.ViewModels
 				var input = window.ShowDialog();
 
 				if (input.HasFlag(DialogResult.OK))
+				{
 					SourcePath = window.SelectedPath;
+
+					var message = string.Format("New source selected: \"{0}\".", SourcePath);
+					Trace.TraceInformation(message);
+				}
 			}
 		}
 
@@ -275,8 +280,84 @@ namespace Mnemosyne.Desktop.ViewModels
 				var input = window.ShowDialog();
 
 				if (input.HasFlag(DialogResult.OK))
+				{
 					TargetPath = window.SelectedPath;
+
+					var message = string.Format("New target selected: \"{0}\".", TargetPath);
+					Trace.TraceInformation(message);
+				}
 			}
+		}
+
+		public void GetProfils()
+		{
+			var serializer = new XmlSerializer(typeof(ProfileViewModel));
+
+			var profilesFodler = new DirectoryInfo(Path.Combine(Application.LocalUserAppDataPath, "Profiles"));
+
+			if (!profilesFodler.Exists)
+				profilesFodler.Create();
+
+			var defaultProfile = from profile in Profiles
+								 where profile.Name == "default"
+								 select profile;
+
+			if (defaultProfile.Count() < 1)
+				Profiles.Add(ProfileViewModel.CreateDefault(false));
+
+			var profilefiles = profilesFodler.EnumerateFiles();
+
+			foreach (var profileFile in profilefiles)
+			{
+				var profiles = from profile in Profiles
+							   where profile.FileInfo != null
+							   where profile.FileInfo.FullName == profileFile.FullName
+							   select profile;
+
+				if (profiles.Count() < 1)
+				{
+					using (var stream = profileFile.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+					{
+						var profil = (ProfileViewModel)serializer.Deserialize(stream);
+						profil.FileInfo = profileFile;
+						Profiles.Add(profil);
+					}
+				}
+			}
+
+			List<ProfileViewModel> toDelete = new List<ProfileViewModel>();
+
+			foreach (var profile in Profiles)
+			{
+				if (profile.FileInfo != null &&
+					!File.Exists(profile.FileInfo.FullName))
+				{
+					toDelete.Add(profile);
+				}
+			}
+
+			foreach (var profile in toDelete)
+			{
+				if (profile == CurrentProfil)
+					CurrentProfil = null;
+				Profiles.Remove(profile);
+			}
+
+			if (CurrentProfil == null)
+				CurrentProfil = defaultProfile.First();
+		}
+
+		private void OpenProfilWindow()
+		{
+			var view = new VisualizationView(SourcePath, CurrentProfil);
+			view.Closed += (sender, e) => { GetProfils(); };
+			view.ShowDialog();
+		}
+
+		private void OpenAddingProfileWindow()
+		{
+			var view = new AddingView(SourcePath);
+			view.ShowDialog();
 		}
 
 		private bool A(FileInfo fileInfo)
@@ -291,13 +372,16 @@ namespace Mnemosyne.Desktop.ViewModels
 			return !CurrentProfil.DirectoriesExcluded.Contains(relative);
 		}
 
-		private async Task Count(DirectoryInfo sourceParentDirectory, DirectoryInfo targetParentDirectory)
+		private void Count(DirectoryInfo sourceParentFolder, DirectoryInfo targetParentFolder)
 		{
-			var sourceChildFiles = sourceParentDirectory.EnumerateFiles();
-			var sourceChildDirectories = sourceParentDirectory.EnumerateDirectories();
+			if (sourceParentFolder.Attributes.HasFlag(FileAttributes.ReparsePoint))
+				return;
 
-			var targetChildFiles = targetParentDirectory?.EnumerateFiles() ?? new List<FileInfo>();
-			var targetChildDirectories = targetParentDirectory?.EnumerateDirectories() ?? new List<DirectoryInfo>();
+			var sourceChildFiles = sourceParentFolder.EnumerateFiles();
+			var sourceChildDirectories = sourceParentFolder.EnumerateDirectories();
+
+			var targetChildFiles = targetParentFolder?.EnumerateFiles() ?? new List<FileInfo>();
+			var targetChildDirectories = targetParentFolder?.EnumerateDirectories() ?? new List<DirectoryInfo>();
 
 			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(A);
 			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(A);
@@ -330,196 +414,260 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				FolderCount++;
 
-				await Count(directoryToUpdate, targetDirectory);
+				Count(directoryToUpdate, targetDirectory);
 			}
 
 			foreach (var directoryToCopy in directoriesToCopy)
 			{
 				FolderCount++;
 
-				await Count(directoryToCopy, null);
+				Count(directoryToCopy, null);
 			}
 		}
 
-		public void GetProfils()
-		{
-			var serializer = new XmlSerializer(typeof(ProfileViewModel));
-
-			var directory = new DirectoryInfo(Path.Combine(Application.LocalUserAppDataPath, "Profiles"));
-
-			if (!directory.Exists)
-				directory.Create();
-
-			var defaultProfil = from profil in Profils
-								where profil.Name == "default"
-								select profil;
-
-			if (defaultProfil.Count() < 1)
-				Profils.Add(ProfileViewModel.CreateDefault(false));
-
-			var files = directory.EnumerateFiles();
-
-			foreach (var file in files)
-			{
-				var profils = from p in Profils
-							  where p.FileInfo != null
-							  where p.FileInfo.FullName == file.FullName
-							  select p;
-
-				if (profils.Count() < 1)
-				{
-					using (var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
-					{
-						var profil = (ProfileViewModel)serializer.Deserialize(stream);
-						profil.FileInfo = file;
-						Profils.Add(profil);
-					}
-				}
-			}
-
-			List<ProfileViewModel> toDelete = new List<ProfileViewModel>();
-
-			foreach (var profil in Profils)
-			{
-				if (profil.FileInfo != null &&
-					!File.Exists(profil.FileInfo.FullName))
-				{
-					toDelete.Add(profil);
-				}
-			}
-
-			foreach (var profil in toDelete)
-			{
-				if (profil == CurrentProfil)
-					CurrentProfil = null;
-				Profils.Remove(profil);
-			}
-
-			if (CurrentProfil == null)
-				CurrentProfil = defaultProfil.First();
-		}
-
-		private void OpenProfilWindow()
-		{
-			var win = new VisualizationView(SourcePath, CurrentProfil);
-			win.Closed += (sender, e) => { GetProfils(); };
-			win.ShowDialog();
-		}
-
-		private void OpenAddingProfileWindow()
-		{
-			var view = new AddingView(SourcePath);
-			view.ShowDialog();
-		}
-
-		private void CopyData(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
+		private void DeleteFile(FileInfo file)
 		{
 			try
 			{
-				for (int i = 0; i < sourceFileStream.Length; i += CurrentProfil.BufferLength)
-				{
-					cancellationToken.ThrowIfCancellationRequested();
+				var message = string.Format("File is deleting to \"{0}\".", file.FullName);
+				Trace.TraceInformation(message);
+				Output = message;
 
-					var buffer = new byte[sourceFileStream.Length];
-					var count = (int)(sourceFileStream.Length - i > CurrentProfil.BufferLength ? CurrentProfil.BufferLength : sourceFileStream.Length - i);
+				if (file.IsReadOnly)
+					file.Attributes &= ~FileAttributes.ReadOnly;
 
-					sourceFileStream.Read(buffer, 0, count);
-					targetFileStream.Write(buffer, 0, count);
+				file.Delete();
 
-					copiedByte += count;
-				}
+				var message2 = string.Format("File is deleted with successful to \"{0}\".", file.FullName);
+				Trace.TraceInformation(message2);
+				Output = message2;
 			}
-			catch (OperationCanceledException)
+			catch (Exception e)
 			{
-				throw  new OperationCanceledException(cancellationToken);
-			}
-			finally
-			{
-				targetFileStream.Flush();
-
-				sourceFileStream.Dispose();
-				targetFileStream.Dispose();
+				var message = string.Format("File delete is failed to \"{0}\", because \"{1}\".", file.FullName, e.Message);
+				Trace.TraceError(message);
+				Output = message;
 			}
 		}
 
-		private void UpdateData(FileStream sourceFileStream, FileStream targetFileStream, CancellationToken cancellationToken)
+		private void DeleteDirectory(DirectoryInfo directory)
 		{
 			try
 			{
-				for (int i = 0; i < sourceFileStream.Length; i += CurrentProfil.BufferLength)
+				if (!directory.Exists)
+					return;
+
+				var message = string.Format("Folder is deleting to \"{0}\".", directory.FullName);
+				Trace.TraceInformation(message);
+				Output = message;
+
+				var files = directory.EnumerateFiles();
+				var directories = directory.EnumerateDirectories();
+
+				foreach (var file in files)
 				{
-					cancellationToken.ThrowIfCancellationRequested();
-
-					var sourceBuffer = new byte[CurrentProfil.BufferLength];
-					var targetBuffer = new byte[CurrentProfil.BufferLength];
-					var count = (int)(sourceFileStream.Length - i > CurrentProfil.BufferLength ? CurrentProfil.BufferLength : sourceFileStream.Length - i);
-
-					sourceFileStream.Seek(i, SeekOrigin.Begin);
-					targetFileStream.Seek(i, SeekOrigin.Begin);
-
-					sourceFileStream.Read(sourceBuffer, 0, count);
-					targetFileStream.Read(targetBuffer, 0, count);
-
-					if (!sourceBuffer.SequenceEqual(targetBuffer))
-					{
-						targetFileStream.Seek(i, SeekOrigin.Begin);
-						targetFileStream.Write(sourceBuffer, 0, count);
-					}
-
-					copiedByte += count;
+					DeleteFile(file);
 				}
+
+				foreach (var dir in directories)
+				{
+					DeleteDirectory(dir);
+				}
+
+				if (directory.Attributes.HasFlag(FileAttributes.ReadOnly))
+					directory.Attributes &= ~FileAttributes.ReadOnly;
+
+				directory.Delete();
+
+				var message2 = string.Format("Folder is deleted with successful to \"{0}\".", directory.FullName);
+				Trace.TraceInformation(message2);
+				Output = message2;
+			}
+			catch (Exception e)
+			{
+				var message = string.Format("Folder delete is failed to \"{0}\", because \"{1}\".", directory.FullName, e.Message);
+				Trace.TraceError(message);
+				Output = message;
+			}
+		}
+
+		private void CopyData(FileInfo sourceFile, FileInfo targetFile, CancellationToken cancellationToken)
+		{
+			try
+			{
+				var message1 = string.Format("Data are copying to \"{0}\".", targetFile.FullName);
+				Trace.TraceInformation(message1);
+				Output = message1;
+
+				using (FileStream sourceStream = sourceFile.Open(FileMode.Open, FileAccess.Read, FileShare.None),
+					targetStream = targetFile.Open(FileMode.CreateNew, FileAccess.Write, FileShare.None))
+				{
+					var buffer = new byte[CurrentProfil.BufferLength];
+
+					for (int i = 0; i < sourceStream.Length; i += CurrentProfil.BufferLength)
+					{
+						cancellationToken.ThrowIfCancellationRequested();
+
+						var remainingBytesCount = sourceStream.Length - i;
+						var count = (int)(remainingBytesCount < CurrentProfil.BufferLength ? remainingBytesCount : CurrentProfil.BufferLength);
+
+						sourceStream.Read(buffer, 0, count);
+						targetStream.Write(buffer, 0, count);
+
+						copiedByte += count;
+					}
+				}
+
+				var message2 = string.Format("Data are copied with successful to \"{0}\".", targetFile.FullName);
+				Trace.TraceInformation(message2);
+				Output = message2;
 			}
 			catch (OperationCanceledException)
 			{
+				targetFile.Delete();
+
+				var message = string.Format("Data copy is canceled. The current file is deleted to \"{0}\".", targetFile.FullName);
+				Trace.TraceWarning(message);
+				Output = message;
+
 				throw new OperationCanceledException(cancellationToken);
 			}
-			finally
+			catch (Exception e)
 			{
-				targetFileStream.Flush();
-
-				sourceFileStream.Dispose();
-				targetFileStream.Dispose();
+				var message = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
+				Trace.TraceError(message);
+				Output = message;
 			}
 		}
 
-		private void UpdateMetadata(FileInfo sourceFile, FileInfo targetFile)
+		private void UpdateData(FileInfo sourceFile, FileInfo targetFile, CancellationToken cancellationToken)
 		{
-			if (CurrentProfil.CreationTime)
-				targetFile.CreationTime = sourceFile.CreationTime;
+			try
+			{
+				var message1 = string.Format("Data are updating to \"{0}\".", targetFile.FullName);
+				Trace.TraceInformation(message1);
+				Output = message1;
 
-			if (CurrentProfil.LastAccessTime)
-				targetFile.LastAccessTime = sourceFile.LastAccessTime;
+				using (FileStream sourceStream = sourceFile.Open(FileMode.Open, FileAccess.Read, FileShare.None),
+					targetStream = targetFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+				{
+					var sourceBuffer = new byte[CurrentProfil.BufferLength];
+					var targetBuffer = new byte[CurrentProfil.BufferLength];
 
-			if (CurrentProfil.LastWriteTime)
-				targetFile.LastWriteTime = sourceFile.LastWriteTime;
+					targetStream.SetLength(sourceStream.Length);
 
-			if (CurrentProfil.Attributes)
-				targetFile.Attributes = sourceFile.Attributes;
+					for (int i = 0; i < sourceStream.Length; i += CurrentProfil.BufferLength)
+					{
+						cancellationToken.ThrowIfCancellationRequested();
 
-			if (CurrentProfil.AccessControl)
-				targetFile.SetAccessControl(sourceFile.GetAccessControl());
+						var remainingBytesCount = sourceStream.Length - i;
+						var count = (int)(remainingBytesCount < CurrentProfil.BufferLength ? remainingBytesCount : CurrentProfil.BufferLength);
+
+						sourceStream.Read(sourceBuffer, 0, count);
+						targetStream.Read(targetBuffer, 0, count);
+
+						if (!sourceBuffer.SequenceEqual(targetBuffer))
+						{
+							targetStream.Position = i;
+							targetStream.Write(sourceBuffer, 0, count);
+						}
+
+						copiedByte += count;
+					}
+				}
+
+				var message2 = string.Format("Data are updated with successful to \"{0}\".", targetFile.FullName);
+				Trace.TraceInformation(message2);
+				Output = message2;
+			}
+			catch (OperationCanceledException)
+			{
+				DeleteFile(targetFile);
+
+				var message = string.Format("Data update is canceled. The current file is deleted to \"{0}\".", targetFile.FullName);
+				Trace.TraceWarning(message);
+				Output = message;
+
+				throw new OperationCanceledException(cancellationToken);
+			}
+			catch (Exception e)
+			{
+				var message = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
+				Trace.TraceError(message);
+				Output = message;
+			}
 		}
 
-		private void UpdateMetadata(DirectoryInfo sourceDirectory, DirectoryInfo targetDirectory)
+		private async Task CopyMetadata(FileInfo sourceFile, FileInfo targetFile, int delay, int lap, CancellationToken cancellationToken)
 		{
-			if (CurrentProfil.CreationTime)
-				targetDirectory.CreationTime = sourceDirectory.CreationTime;
+			var currentLap = 0;
 
-			if (CurrentProfil.LastAccessTime)
-				targetDirectory.LastAccessTime = sourceDirectory.LastAccessTime;
+			while (true)
+			{
+				try
+				{
+					if (targetFile.Exists)
+					{
+						var message1 = string.Format("Metadata are updating to \"{0}\".", targetFile.FullName);
+						Trace.TraceInformation(message1);
+						Output = message1;
 
-			if (CurrentProfil.LastWriteTime)
-				targetDirectory.LastWriteTime = sourceDirectory.LastWriteTime;
+						if (CurrentProfil.CreationTime)
+							targetFile.CreationTimeUtc = sourceFile.CreationTimeUtc;
 
-			if (CurrentProfil.Attributes)
-				targetDirectory.Attributes = sourceDirectory.Attributes;
+						if (CurrentProfil.LastAccessTime)
+							targetFile.LastAccessTimeUtc = sourceFile.LastAccessTimeUtc;
 
-			if (CurrentProfil.AccessControl)
-				targetDirectory.SetAccessControl(sourceDirectory.GetAccessControl());
+						if (CurrentProfil.LastWriteTime)
+							targetFile.LastWriteTime = sourceFile.LastWriteTimeUtc;
+
+						if (CurrentProfil.Attributes)
+							targetFile.Attributes = sourceFile.Attributes;
+
+						if (CurrentProfil.AccessControl)
+							targetFile.SetAccessControl(sourceFile.GetAccessControl());
+
+						var message2 = string.Format("Metadata are updated with successful to \"{0}\".", targetFile.FullName);
+						Trace.TraceInformation(message2);
+						Output = message2;
+					}
+
+					break;
+				}
+				catch (IOException e)
+				{
+					var message = string.Format("Metadata update is failed to \"{0}\", yet {1} trying, because \"{2}\".", targetFile.FullName, currentLap - lap, e.Message);
+					Trace.TraceWarning(message);
+					Output = message;
+
+					if (++currentLap > lap)
+					{
+						break;
+					}
+					else
+					{
+						var message2 = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
+						Trace.TraceError(message2);
+						Output = message2;
+					}
+
+					if (delay > 0)
+						await Task.Delay(delay, cancellationToken);
+				}
+				catch (Exception e)
+				{
+					var message = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
+					Trace.TraceError(message);
+					Output = message;
+				}
+			}
 		}
 
 		private async Task Dispatch(DirectoryInfo sourceParentDirectory, DirectoryInfo targetParentDirectory, CancellationToken cancellationToken)
 		{
+			if (sourceParentDirectory.Attributes.HasFlag(FileAttributes.ReparsePoint))
+				return;
+
 			var sourceChildFiles = sourceParentDirectory.EnumerateFiles();
 			var sourceChildDirectories= sourceParentDirectory.EnumerateDirectories();
 			var targetChildFiles = targetParentDirectory.EnumerateFiles();
@@ -535,11 +683,12 @@ namespace Mnemosyne.Desktop.ViewModels
 
 			foreach (var fileToDelete in filesToDelete)
 			{
+				if (!fileToDelete.IsReadOnly)
+					fileToDelete.Attributes &= ~FileAttributes.ReadOnly;
+
 				fileToDelete.Delete();
 
 				ItemPosition++;
-
-				Output = "DELETE " + fileToDelete.Name;
 			}
 
 			foreach (var fileToUpdate in filesToUpdate)
@@ -550,24 +699,15 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				try
 				{
-					var targetChildFileStream = targetChildFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-
-					targetChildFileStream.SetLength(fileToUpdate.Length);
-					targetChildFileStream.Flush();
-
-					UpdateData(fileToUpdate.OpenRead(), targetChildFileStream, cancellationToken);
+					UpdateData(fileToUpdate, targetChildFile, cancellationToken);
+					await CopyMetadata(fileToUpdate, targetChildFile, 500, 10, cancellationToken);
 				}
 				catch (OperationCanceledException)
 				{
-					targetChildFile.Delete();
 					return;
 				}
 
-				UpdateMetadata(fileToUpdate, targetChildFile);
-
 				ItemPosition++;
-
-				Output = "UPDATE " + fileToUpdate.Name;
 			}
 
 			foreach (var fileToCopy in filesToCopy)
@@ -578,28 +718,22 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				try
 				{
-					CopyData(fileToCopy.OpenRead(), targetChildFile.Open(FileMode.Create, FileAccess.Write, FileShare.Write), cancellationToken);
+					CopyData(fileToCopy, targetChildFile, cancellationToken);
+					await CopyMetadata(fileToCopy, targetChildFile, 500, 10, cancellationToken);
 				}
 				catch (OperationCanceledException)
 				{
-					targetChildFile.Delete();
 					return;
 				}
 
-				UpdateMetadata(fileToCopy, targetChildFile);
-
 				ItemPosition++;
-
-				Output = "COPY " + fileToCopy.Name;
 			}
 
 			foreach (var directoryToDelete in directoriesToDelete)
 			{
-				directoryToDelete.Delete(true);
+				DeleteDirectory(directoryToDelete);
 
 				ItemPosition++;
-
-				Output = "DELETE " + directoryToDelete.Name;
 			}
 
 			foreach (var directoryToUpdate in directoriesToUpdate)
@@ -608,11 +742,7 @@ namespace Mnemosyne.Desktop.ViewModels
 				var absolute = Path.Combine(TargetPath, relative);
 				var targetChildDirectory = new DirectoryInfo(absolute);
 
-				UpdateMetadata(directoryToUpdate, targetChildDirectory);
-
 				ItemPosition++;
-
-				Output = "UPDATE " + directoryToUpdate.Name;
 
 				await Dispatch(directoryToUpdate, targetChildDirectory, cancellationToken);
 			}
@@ -625,11 +755,7 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				targetChildDirectory.Create();
 
-				UpdateMetadata(directoryToCopy, targetChildDirectory);
-
 				ItemPosition++;
-
-				Output = "COPY " + directoryToCopy.Name;
 
 				await Dispatch(directoryToCopy, targetChildDirectory, cancellationToken);
 			}
@@ -656,15 +782,42 @@ namespace Mnemosyne.Desktop.ViewModels
 				var sourceDirectory = new DirectoryInfo(SourcePath);
 				var targetDirectory = new DirectoryInfo(TargetPath);
 
+				var targetDrive = new DriveInfo(Path.GetPathRoot(TargetPath));
+
 				cancellationTokenSource = new CancellationTokenSource();
 
 				IsRunning = true;
 
-				Output = "COUNT";
+				var message1 = string.Format("Syncrhoniszation started from \"{0}\" to \"{1}\".", SourcePath, TargetPath);
+				Trace.TraceInformation(message1);
+				Trace.Flush();
 
-				await Count(sourceDirectory, targetDirectory);
+				var message2 = string.Format("Counting the files and folders.");
+				Output = message2;
+				Trace.TraceInformation(message2);
+				Trace.Flush();
 
-				Debug.WriteLine(ItemCount);
+				Count(sourceDirectory, targetDirectory);
+
+				var message3 = string.Format("{0} file(s) and {1} folder(s) counted.", FileCount, FolderCount);
+				Output = message3;
+				Trace.TraceInformation(message3);
+				Trace.Flush();
+
+				if (byteToCopy > targetDrive.AvailableFreeSpace)
+				{
+					var message4 = string.Format("Syncrhoniszation failed from \"{0}\" to \"{1}\" because the available space to the target is less than the source size.", SourcePath, TargetPath);
+					Output = message4;
+					Trace.TraceInformation(message4);
+					Trace.Flush();
+
+					return;
+				}
+
+				var message5 = string.Format("Analysing the files and folders.");
+				Output = message5;
+				Trace.TraceInformation(message5);
+				Trace.Flush();
 
 				StartTime = DateTime.Now;
 
@@ -672,20 +825,29 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				await Dispatch(sourceDirectory, targetDirectory, cancellationTokenSource.Token);
 
-				Debug.WriteLine(ItemPosition);
-
 				timer.Dispose();
 
 				EndTime = DateTime.Now;
 
+				var message6 = string.Format("Files and folders analysed.");
+				Output = message6;
+				Trace.TraceInformation(message6);
+				Trace.Flush();
+
+				var message7 = string.Empty;
+
 				if (cancellationTokenSource.IsCancellationRequested)
-					Output = "STOPPED";
+					message7 = string.Format("Syncrhoniszation cancelled from \"{0}\" to \"{1}\".", SourcePath, TargetPath);
 				else
-					Output = "FINISHED";
+					message7 = string.Format("Syncrhoniszation finished from \"{0}\" to \"{1}\".", SourcePath, TargetPath); ;
 
 				cancellationTokenSource.Dispose();
 
 				IsRunning = false;
+
+				Output = message7;
+				Trace.TraceInformation(message7);
+				Trace.Flush();
 			}
 
 			await Task.Run(main);

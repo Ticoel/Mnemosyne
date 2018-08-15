@@ -1,6 +1,7 @@
 ﻿using Mnemosyne.Desktop.Helpers;
 using Mnemosyne.Desktop.Properties;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Controls;
 
 namespace Mnemosyne.Desktop.ViewModels
