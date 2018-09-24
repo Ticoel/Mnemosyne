@@ -1,11 +1,11 @@
 ﻿using Mnemosyne.Desktop.Helpers;
-using System.Xml.Serialization;
 using System.IO;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 
 namespace Mnemosyne.Desktop.ViewModels
 {
-	public sealed class AddingViewModel : CommonViewModel
+	public class ProfileVisualizationViewModel : CommonViewModel
 	{
 		public string SourcePath
 		{
@@ -29,7 +29,6 @@ namespace Mnemosyne.Desktop.ViewModels
 				{
 					profile = value;
 					Notify(nameof(Profile));
-					CMDCreateProfile.Notify();
 				}
 			}
 		}
@@ -66,24 +65,22 @@ namespace Mnemosyne.Desktop.ViewModels
 		public RelayAction CMDRemoveDirectory { get; }
 		public RelayAction CMDAddFile { get; }
 		public RelayAction CMDRemoveFile { get; }
-		public RelayAction CMDCreateProfile { get; }
+		public RelayAction CMDRemoveProfile { get; }
+		public RelayAction CMDSaveProfile { get; }
 
 		private string sourcePath;
-		private ProfileViewModel profile;
+		ProfileViewModel profile;
 		private string selectedDirectory;
 		private string selectedFile;
-		private string path;
 
-		public AddingViewModel()
+		public ProfileVisualizationViewModel()
 		{
 			CMDAddDirectory = new RelayAction((param) => AddDirectory(), (param) => true);
 			CMDRemoveDirectory = new RelayAction((param) => Profile.DirectoriesExcluded.Remove(SelectedDirectory), (param) => SelectedDirectory != null);
 			CMDAddFile = new RelayAction((param) => AddFile(), (param) => true);
 			CMDRemoveFile = new RelayAction((param) => Profile.FilesExcluded.Remove(SelectedFile), (param) => SelectedFile != null);
-			CMDCreateProfile = new RelayAction((param) => CreateProfile(), (param) => CheckProfileExistence());
-
-			Profile = ProfileViewModel.CreateDefault(true);
-			Profile.Name = string.Empty;
+			CMDRemoveProfile = new RelayAction((param) => { Remove(); }, (param) => true);
+			CMDSaveProfile = new RelayAction((param) => { if (!(bool)param) Save(); }, (param) => true);
 		}
 
 		private void AddDirectory()
@@ -121,29 +118,17 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		private void CreateProfile()
+		private void Save()
 		{
 			var serializer = new XmlSerializer(typeof(ProfileViewModel));
 
-			using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Write))
-			{
-				serializer.Serialize(stream, Profile);
-			}
+			serializer.Serialize(Profile.FileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.Write), Profile);
+			
 		}
 
-		private bool CheckProfileExistence()
+		private void Remove()
 		{
-			if (string.IsNullOrWhiteSpace(Profile.Name))
-				return false;
-
-			var filename = Profile.Name + ".xml";
-
-			foreach (var invalidChar in Path.GetInvalidFileNameChars())
-				filename = filename.Replace(invalidChar, '_');
-
-			path = Path.Combine(Application.LocalUserAppDataPath, "Profiles", filename);
-
-			return !File.Exists(path);
+			Profile.FileInfo.Delete();
 		}
 	}
 }

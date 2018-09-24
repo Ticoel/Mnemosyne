@@ -17,7 +17,7 @@
 	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="1*"/>
-			<RowDefinition Height="3*"/>
+			<RowDefinition Height="2*"/>
 			<RowDefinition Height="1*"/>
 		</Grid.RowDefinitions>
 		<Grid
@@ -68,11 +68,11 @@
 					<Button
 						Command="{Binding Path=CMDViewProfile}"
 						Style="{StaticResource ButtonStyle}"
-						Content="View"/>
+						Content="View profile"/>
 					<Button
 						Command="{Binding Path=CMDAddProfile}"
 						Style="{StaticResource ButtonStyle}"
-						Content="Add"/>
+						Content="New profile"/>
 				</WrapPanel>
 				<WrapPanel
 					Orientation="Horizontal"
@@ -86,6 +86,10 @@
 						Command="{Binding Path=CMDCancel, Mode=OneTime}"
 						Style="{StaticResource ButtonStyle}"
 						Content="Cancel"/>
+					<Button
+						Command="{Binding Path=CMDViewLog, Mode=OneTime}"
+						Style="{StaticResource ButtonStyle}"
+						Content="View log"/>
 				</WrapPanel>
 			</StackPanel>
 		</ScrollViewer>

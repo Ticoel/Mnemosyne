@@ -7,13 +7,13 @@ namespace Mnemosyne.Desktop.Views
 {
 	public partial class AddingView : Window
 	{
-		AddingViewModel addingViewModel;
+		ProfileAddingViewModel addingViewModel;
 
 		public AddingView(string sourcePath)
 		{
 			InitializeComponent();
 
-			addingViewModel = (AddingViewModel)DataContext;
+			addingViewModel = (ProfileAddingViewModel)DataContext;
 
 			addingViewModel.SourcePath = sourcePath;
 		}

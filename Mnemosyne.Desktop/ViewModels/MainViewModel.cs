@@ -6,8 +6,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -51,65 +49,6 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		public long FileCount
-		{
-			get => fileCount;
-			set
-			{
-				if (value != fileCount)
-				{
-					fileCount = value;
-					Notify(nameof(FileCount));
-					Notify(nameof(ItemCount));
-				}
-			}
-		}
-
-		public long FolderCount
-		{
-			get => folderCount;
-			set
-			{
-				if (value != folderCount)
-				{
-					folderCount = value;
-					Notify(nameof(FolderCount));
-					Notify(nameof(ItemCount));
-				}
-			}
-		}
-
-		public long ItemCount
-		{
-			get => FileCount + FolderCount;
-		}
-
-		public long ItemPosition
-		{
-			get => itemPosition;
-			set
-			{
-				if (value != itemPosition)
-				{
-					itemPosition = value;
-					Notify(nameof(ItemPosition));
-				}
-			}
-		}
-
-		public string Output
-		{
-			get => output;
-			set
-			{
-				if (value != output)
-				{
-					output = value;
-					Notify(nameof(Output));
-				}
-			}
-		}
-
 		public bool IsRunning
 		{
 			get => isRunning;
@@ -127,7 +66,34 @@ namespace Mnemosyne.Desktop.ViewModels
 						CMDAddProfile.Notify();
 						CMDStart.Notify();
 						CMDCancel.Notify();
+						CMDViewLog.Notify();
 					}));
+				}
+			}
+		}
+
+		public ActivityViewModel Activity
+		{
+			get => activity;
+			set
+			{
+				if (value != activity)
+				{
+					activity = value;
+					Notify(nameof(Activity));
+				}
+			}
+		}
+
+		public long ItemPosition
+		{
+			get => itemPosition;
+			set
+			{
+				if (value != itemPosition)
+				{
+					itemPosition = value;
+					Notify(nameof(ItemPosition));
 				}
 			}
 		}
@@ -145,19 +111,6 @@ namespace Mnemosyne.Desktop.ViewModels
 			}
 		}
 
-		public TimeSpan ElapsedTime
-		{
-			get => elapsedTime;
-			set
-			{
-				if (value != elapsedTime)
-				{
-					elapsedTime = value;
-					Notify(nameof(ElapsedTime));
-				}
-			}
-		}
-
 		public DateTime EndTime
 		{
 			get => endTime;
@@ -167,6 +120,19 @@ namespace Mnemosyne.Desktop.ViewModels
 				{
 					endTime = value;
 					Notify(nameof(EndTime));
+				}
+			}
+		}
+
+		public TimeSpan ElapsedTime
+		{
+			get => elapsedTime;
+			set
+			{
+				if (value != elapsedTime)
+				{
+					elapsedTime = value;
+					Notify(nameof(ElapsedTime));
 				}
 			}
 		}
@@ -220,30 +186,31 @@ namespace Mnemosyne.Desktop.ViewModels
 		}
 
 		public RelayAction CMDSelectSource { get; }
+
 		public RelayAction CMDSelectTarget { get; }
+
 		public RelayAction CMDViewProfile { get; }
+
 		public RelayAction CMDAddProfile { get; }
+
 		public RelayAction CMDStart { get; }
+
 		public RelayAction CMDCancel { get; }
 
-		private static readonly object readLock = new object();
-		private static readonly object writeLock = new object();
+		public RelayAction CMDViewLog { get; }
+
 		private string sourcePath;
 		private string targetPath;
-		private long fileCount;
-		private long folderCount;
-		private long itemPosition;
-		private string output;
 		private bool isRunning;
+		private long itemPosition;
 		private CancellationTokenSource cancellationTokenSource;
 		private DateTime startTime;
-		private TimeSpan elapsedTime;
 		private DateTime endTime;
+		private TimeSpan elapsedTime;
 		private double speed;
 		private TimeSpan remainingTime;
-		private long copiedByte;
-		private long byteToCopy;
 		private ProfileViewModel currentProfil;
+		private ActivityViewModel activity;
 
 		public MainViewModel()
 		{
@@ -251,10 +218,11 @@ namespace Mnemosyne.Desktop.ViewModels
 
 			CMDSelectSource = new RelayAction((param) => SelectSource(), (param) => !IsRunning);
 			CMDSelectTarget = new RelayAction((param) => SelectTarget(), (param) => !IsRunning && SourcePath != null);
-			CMDViewProfile = new RelayAction((param) => { OpenProfilWindow(); }, (param) => !IsRunning && CurrentProfil != null && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
-			CMDAddProfile = new RelayAction((param) => { OpenAddingProfileWindow(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
+			CMDViewProfile = new RelayAction((param) => { OpenProfilView(); }, (param) => !IsRunning && CurrentProfil != null && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
+			CMDAddProfile = new RelayAction((param) => { OpenAddingProfileView(); }, (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
 			CMDStart = new RelayAction(async (param) => await Start(), (param) => !IsRunning && SourcePath != null && TargetPath != null && SourcePath != TargetPath);
 			CMDCancel = new RelayAction((param) => { Cancel(); }, (param) => IsRunning);
+			CMDViewLog = new RelayAction((param) => { OpenLogView(); }, (param) => { return !IsRunning; });
 		}
 
 		private void SelectSource()
@@ -347,28 +315,34 @@ namespace Mnemosyne.Desktop.ViewModels
 				CurrentProfil = defaultProfile.First();
 		}
 
-		private void OpenProfilWindow()
+		private void OpenProfilView()
 		{
-			var view = new VisualizationView(SourcePath, CurrentProfil);
+			var view = new ProfileVisualizationView(SourcePath, CurrentProfil);
 			view.Closed += (sender, e) => { GetProfils(); };
 			view.ShowDialog();
 		}
 
-		private void OpenAddingProfileWindow()
+		private void OpenAddingProfileView()
 		{
 			var view = new AddingView(SourcePath);
 			view.ShowDialog();
 		}
 
-		private bool A(FileInfo fileInfo)
+		private void OpenLogView()
 		{
-			var relative = fileInfo.FullName.Substring(SourcePath.Length + 1);
+			var view = new LogView();
+			view.ShowDialog();
+		}
+
+		private bool FileIsCopyable(FileInfo file)
+		{
+			var relative = file.FullName.Substring(SourcePath.Length + 1);
 			return !CurrentProfil.FilesExcluded.Contains(relative);
 		}
 
-		private bool B(DirectoryInfo directoryInfo)
+		private bool FolderIsCopyable(DirectoryInfo folder)
 		{
-			var relative = directoryInfo.FullName.Substring(SourcePath.Length + 1);
+			var relative = folder.FullName.Substring(SourcePath.Length + 1);
 			return !CurrentProfil.DirectoriesExcluded.Contains(relative);
 		}
 
@@ -383,27 +357,27 @@ namespace Mnemosyne.Desktop.ViewModels
 			var targetChildFiles = targetParentFolder?.EnumerateFiles() ?? new List<FileInfo>();
 			var targetChildDirectories = targetParentFolder?.EnumerateDirectories() ?? new List<DirectoryInfo>();
 
-			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(A);
-			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(A);
-			var filesToCopy = sourceChildFiles.Except(targetChildFiles, new FileComparer()).Where(A);
+			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(FileIsCopyable);
+			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(FileIsCopyable);
+			var filesToCopy = sourceChildFiles.Except(targetChildFiles, new FileComparer()).Where(FileIsCopyable);
 
-			var directoriesToDelete = targetChildDirectories.Except(sourceChildDirectories, new DirectoryComparer()).Where(B);
-			var directoriesToUpdate = sourceChildDirectories.Intersect(targetChildDirectories, new DirectoryComparer()).Where(B);
-			var directoriesToCopy = sourceChildDirectories.Except(targetChildDirectories, new DirectoryComparer()).Where(B);
+			var directoriesToDelete = targetChildDirectories.Except(sourceChildDirectories, new DirectoryComparer()).Where(FolderIsCopyable);
+			var directoriesToUpdate = sourceChildDirectories.Intersect(targetChildDirectories, new DirectoryComparer()).Where(FolderIsCopyable);
+			var directoriesToCopy = sourceChildDirectories.Except(targetChildDirectories, new DirectoryComparer()).Where(FolderIsCopyable);
 
-			FileCount += filesToDelete.Count();
-			FolderCount += directoriesToDelete.Count();
+			Activity.FileCount += filesToDelete.Count();
+			Activity.FolderCount += directoriesToDelete.Count();
 
 			foreach (var fileToUpdate in filesToUpdate)
 			{
-				FileCount++;
-				byteToCopy += fileToUpdate.Length;
+				Activity.FileCount++;
+				Activity.ByteCount += fileToUpdate.Length;
 			}
 
 			foreach (var fileToCopy in filesToCopy)
 			{
-				FileCount++;
-				byteToCopy += fileToCopy.Length;
+				Activity.FileCount++;
+				Activity.ByteCount += fileToCopy.Length;
 			}
 
 			foreach (var directoryToUpdate in directoriesToUpdate)
@@ -412,14 +386,14 @@ namespace Mnemosyne.Desktop.ViewModels
 				var absolute = Path.Combine(TargetPath, relative);
 				var targetDirectory = new DirectoryInfo(absolute);
 
-				FolderCount++;
+				Activity.FolderCount++;
 
 				Count(directoryToUpdate, targetDirectory);
 			}
 
 			foreach (var directoryToCopy in directoriesToCopy)
 			{
-				FolderCount++;
+				Activity.FolderCount++;
 
 				Count(directoryToCopy, null);
 			}
@@ -429,49 +403,45 @@ namespace Mnemosyne.Desktop.ViewModels
 		{
 			try
 			{
-				var message = string.Format("File is deleting to \"{0}\".", file.FullName);
-				Trace.TraceInformation(message);
-				Output = message;
+				WriteMessage(string.Format("File is deleting to \"{0}\".", file.FullName), MessageType.Information);
 
 				if (file.IsReadOnly)
 					file.Attributes &= ~FileAttributes.ReadOnly;
 
 				file.Delete();
 
-				var message2 = string.Format("File is deleted with successful to \"{0}\".", file.FullName);
-				Trace.TraceInformation(message2);
-				Output = message2;
+				WriteMessage(string.Format("File is deleted with successful to \"{0}\".", file.FullName), MessageType.Information);
 			}
 			catch (Exception e)
 			{
-				var message = string.Format("File delete is failed to \"{0}\", because \"{1}\".", file.FullName, e.Message);
-				Trace.TraceError(message);
-				Output = message;
+				WriteMessage(string.Format("File delete is failed to \"{0}\", because \"{1}\".", file.FullName, e.Message), MessageType.Error);
 			}
 		}
 
-		private void DeleteDirectory(DirectoryInfo directory)
+		private void DeleteDirectory(DirectoryInfo directory, CancellationToken cancellationToken)
 		{
 			try
 			{
 				if (!directory.Exists)
 					return;
 
-				var message = string.Format("Folder is deleting to \"{0}\".", directory.FullName);
-				Trace.TraceInformation(message);
-				Output = message;
+				WriteMessage(string.Format("Folder is deleting to \"{0}\".", directory.FullName), MessageType.Information);
 
 				var files = directory.EnumerateFiles();
 				var directories = directory.EnumerateDirectories();
 
 				foreach (var file in files)
 				{
+					cancellationToken.ThrowIfCancellationRequested();
+
 					DeleteFile(file);
 				}
 
 				foreach (var dir in directories)
 				{
-					DeleteDirectory(dir);
+					cancellationToken.ThrowIfCancellationRequested();
+
+					DeleteDirectory(dir, cancellationToken);
 				}
 
 				if (directory.Attributes.HasFlag(FileAttributes.ReadOnly))
@@ -479,15 +449,15 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				directory.Delete();
 
-				var message2 = string.Format("Folder is deleted with successful to \"{0}\".", directory.FullName);
-				Trace.TraceInformation(message2);
-				Output = message2;
+				WriteMessage(string.Format("Folder is deleted with successful to \"{0}\".", directory.FullName), MessageType.Information);
+			}
+			catch (OperationCanceledException)
+			{
+				throw new OperationCanceledException(cancellationToken);
 			}
 			catch (Exception e)
 			{
-				var message = string.Format("Folder delete is failed to \"{0}\", because \"{1}\".", directory.FullName, e.Message);
-				Trace.TraceError(message);
-				Output = message;
+				WriteMessage(string.Format("Folder delete is failed to \"{0}\", because \"{1}\".", directory.FullName, e.Message), MessageType.Error);
 			}
 		}
 
@@ -495,9 +465,7 @@ namespace Mnemosyne.Desktop.ViewModels
 		{
 			try
 			{
-				var message1 = string.Format("Data are copying to \"{0}\".", targetFile.FullName);
-				Trace.TraceInformation(message1);
-				Output = message1;
+				WriteMessage(string.Format("Data are copying to \"{0}\".", targetFile.FullName), MessageType.Information);
 
 				using (FileStream sourceStream = sourceFile.Open(FileMode.Open, FileAccess.Read, FileShare.None),
 					targetStream = targetFile.Open(FileMode.CreateNew, FileAccess.Write, FileShare.None))
@@ -514,29 +482,23 @@ namespace Mnemosyne.Desktop.ViewModels
 						sourceStream.Read(buffer, 0, count);
 						targetStream.Write(buffer, 0, count);
 
-						copiedByte += count;
+						Activity.CopiedByte += count;
 					}
 				}
 
-				var message2 = string.Format("Data are copied with successful to \"{0}\".", targetFile.FullName);
-				Trace.TraceInformation(message2);
-				Output = message2;
+				WriteMessage(string.Format("Data are copied with successful to \"{0}\".", targetFile.FullName), MessageType.Information);
 			}
 			catch (OperationCanceledException)
 			{
 				targetFile.Delete();
 
-				var message = string.Format("Data copy is canceled. The current file is deleted to \"{0}\".", targetFile.FullName);
-				Trace.TraceWarning(message);
-				Output = message;
+				WriteMessage(string.Format("Data copy is canceled. The current file is deleted to \"{0}\".", targetFile.FullName), MessageType.Warning);
 
 				throw new OperationCanceledException(cancellationToken);
 			}
 			catch (Exception e)
 			{
-				var message = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
-				Trace.TraceError(message);
-				Output = message;
+				WriteMessage(string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message), MessageType.Error);
 			}
 		}
 
@@ -544,9 +506,7 @@ namespace Mnemosyne.Desktop.ViewModels
 		{
 			try
 			{
-				var message1 = string.Format("Data are updating to \"{0}\".", targetFile.FullName);
-				Trace.TraceInformation(message1);
-				Output = message1;
+				WriteMessage(string.Format("Data are updating to \"{0}\".", targetFile.FullName), MessageType.Information);
 
 				using (FileStream sourceStream = sourceFile.Open(FileMode.Open, FileAccess.Read, FileShare.None),
 					targetStream = targetFile.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None))
@@ -572,29 +532,23 @@ namespace Mnemosyne.Desktop.ViewModels
 							targetStream.Write(sourceBuffer, 0, count);
 						}
 
-						copiedByte += count;
+						Activity.CopiedByte += count;
 					}
 				}
-
-				var message2 = string.Format("Data are updated with successful to \"{0}\".", targetFile.FullName);
-				Trace.TraceInformation(message2);
-				Output = message2;
+				
+				WriteMessage(string.Format("Data are updated with successful to \"{0}\".", targetFile.FullName), MessageType.Information);
 			}
 			catch (OperationCanceledException)
 			{
 				DeleteFile(targetFile);
 
-				var message = string.Format("Data update is canceled. The current file is deleted to \"{0}\".", targetFile.FullName);
-				Trace.TraceWarning(message);
-				Output = message;
+				WriteMessage(string.Format("Data update is canceled. The current file is deleted to \"{0}\".", targetFile.FullName), MessageType.Warning);
 
 				throw new OperationCanceledException(cancellationToken);
 			}
 			catch (Exception e)
 			{
-				var message = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
-				Trace.TraceError(message);
-				Output = message;
+				WriteMessage(string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message), MessageType.Error);
 			}
 		}
 
@@ -608,9 +562,7 @@ namespace Mnemosyne.Desktop.ViewModels
 				{
 					if (targetFile.Exists)
 					{
-						var message1 = string.Format("Metadata are updating to \"{0}\".", targetFile.FullName);
-						Trace.TraceInformation(message1);
-						Output = message1;
+						WriteMessage(string.Format("Metadata are updating to \"{0}\".", targetFile.FullName), MessageType.Information);
 
 						if (CurrentProfil.CreationTime)
 							targetFile.CreationTimeUtc = sourceFile.CreationTimeUtc;
@@ -627,38 +579,26 @@ namespace Mnemosyne.Desktop.ViewModels
 						if (CurrentProfil.AccessControl)
 							targetFile.SetAccessControl(sourceFile.GetAccessControl());
 
-						var message2 = string.Format("Metadata are updated with successful to \"{0}\".", targetFile.FullName);
-						Trace.TraceInformation(message2);
-						Output = message2;
+						WriteMessage(string.Format("Metadata are updated with successful to \"{0}\".", targetFile.FullName), MessageType.Information);
 					}
 
 					break;
 				}
 				catch (IOException e)
 				{
-					var message = string.Format("Metadata update is failed to \"{0}\", yet {1} trying, because \"{2}\".", targetFile.FullName, currentLap - lap, e.Message);
-					Trace.TraceWarning(message);
-					Output = message;
+					WriteMessage(string.Format("Metadata update is failed to \"{0}\", yet {1} trying, because \"{2}\".", targetFile.FullName, currentLap - lap, e.Message), MessageType.Warning);
 
 					if (++currentLap > lap)
-					{
 						break;
-					}
 					else
-					{
-						var message2 = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
-						Trace.TraceError(message2);
-						Output = message2;
-					}
+						WriteMessage(string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message), MessageType.Error);
 
 					if (delay > 0)
 						await Task.Delay(delay, cancellationToken);
 				}
 				catch (Exception e)
 				{
-					var message = string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message);
-					Trace.TraceError(message);
-					Output = message;
+					WriteMessage(string.Format("Data copy is failed to \"{0}\", because \"{1}\".", targetFile.FullName, e.Message), MessageType.Error);
 				}
 			}
 		}
@@ -673,20 +613,17 @@ namespace Mnemosyne.Desktop.ViewModels
 			var targetChildFiles = targetParentDirectory.EnumerateFiles();
 			var targetChildDirectories = targetParentDirectory.EnumerateDirectories();
 			
-			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(A);
-			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(A);
-			var filesToCopy = sourceChildFiles.Except(targetChildFiles, new FileComparer()).Where(A);
+			var filesToDelete = targetChildFiles.Except(sourceChildFiles, new FileComparer()).Where(FileIsCopyable);
+			var filesToUpdate = sourceChildFiles.Intersect(targetChildFiles, new FileComparer()).Where(FileIsCopyable);
+			var filesToCopy = sourceChildFiles.Except(targetChildFiles, new FileComparer()).Where(FileIsCopyable);
 
-			var directoriesToDelete = targetChildDirectories.Except(sourceChildDirectories, new DirectoryComparer()).Where(B);
-			var directoriesToUpdate = sourceChildDirectories.Intersect(targetChildDirectories, new DirectoryComparer()).Where(B);
-			var directoriesToCopy = sourceChildDirectories.Except(targetChildDirectories, new DirectoryComparer()).Where(B);
+			var directoriesToDelete = targetChildDirectories.Except(sourceChildDirectories, new DirectoryComparer()).Where(FolderIsCopyable);
+			var directoriesToUpdate = sourceChildDirectories.Intersect(targetChildDirectories, new DirectoryComparer()).Where(FolderIsCopyable);
+			var directoriesToCopy = sourceChildDirectories.Except(targetChildDirectories, new DirectoryComparer()).Where(FolderIsCopyable);
 
 			foreach (var fileToDelete in filesToDelete)
 			{
-				if (!fileToDelete.IsReadOnly)
-					fileToDelete.Attributes &= ~FileAttributes.ReadOnly;
-
-				fileToDelete.Delete();
+				DeleteFile(fileToDelete);
 
 				ItemPosition++;
 			}
@@ -731,7 +668,7 @@ namespace Mnemosyne.Desktop.ViewModels
 
 			foreach (var directoryToDelete in directoriesToDelete)
 			{
-				DeleteDirectory(directoryToDelete);
+				DeleteDirectory(directoryToDelete, cancellationToken);
 
 				ItemPosition++;
 			}
@@ -766,18 +703,20 @@ namespace Mnemosyne.Desktop.ViewModels
 			ElapsedTime = DateTime.Now - StartTime;
 
 			if (ElapsedTime.TotalSeconds > 0)
-				Speed = copiedByte / ElapsedTime.TotalSeconds;
+				Speed = Activity.CopiedByte / ElapsedTime.TotalSeconds;
 
 			if (Speed > 0)
-				RemainingTime = TimeSpan.FromSeconds((byteToCopy - copiedByte) / Speed);
+				RemainingTime = TimeSpan.FromSeconds((Activity.ByteCount - Activity.CopiedByte) / Speed);
 		}
 
 		private async Task Start()
+
 		{
 			async Task main()
 			{
-				FileCount = FolderCount = ItemPosition = 0;
-				copiedByte = byteToCopy = 0;
+				Activity = new ActivityViewModel();
+				Activity.FileCount = Activity.FolderCount = ItemPosition = 0;
+				Activity.CopiedByte = Activity.ByteCount = 0;
 
 				var sourceDirectory = new DirectoryInfo(SourcePath);
 				var targetDirectory = new DirectoryInfo(TargetPath);
@@ -788,36 +727,31 @@ namespace Mnemosyne.Desktop.ViewModels
 
 				IsRunning = true;
 
-				var message1 = string.Format("Syncrhoniszation started from \"{0}\" to \"{1}\".", SourcePath, TargetPath);
-				Trace.TraceInformation(message1);
-				Trace.Flush();
+				WriteMessage(string.Format("Syncrhoniszation started from \"{0}\" to \"{1}\".", SourcePath, TargetPath), MessageType.Information);
+				
+				WriteMessage(string.Format("Counting the files and folders."), MessageType.Information);
 
-				var message2 = string.Format("Counting the files and folders.");
-				Output = message2;
-				Trace.TraceInformation(message2);
-				Trace.Flush();
-
-				Count(sourceDirectory, targetDirectory);
-
-				var message3 = string.Format("{0} file(s) and {1} folder(s) counted.", FileCount, FolderCount);
-				Output = message3;
-				Trace.TraceInformation(message3);
-				Trace.Flush();
-
-				if (byteToCopy > targetDrive.AvailableFreeSpace)
+				try
 				{
-					var message4 = string.Format("Syncrhoniszation failed from \"{0}\" to \"{1}\" because the available space to the target is less than the source size.", SourcePath, TargetPath);
-					Output = message4;
-					Trace.TraceInformation(message4);
-					Trace.Flush();
+					Count(sourceDirectory, targetDirectory);
+				}
+				catch(Exception e)
+				{
+					WriteMessage(string.Format("Syncrhoniszation failed from \"{0}\" to \"{1}\" because \"{2}\".", SourcePath, TargetPath, e.Message), MessageType.Error);
 
 					return;
 				}
 
-				var message5 = string.Format("Analysing the files and folders.");
-				Output = message5;
-				Trace.TraceInformation(message5);
-				Trace.Flush();
+				WriteMessage(string.Format("{0} file(s) and {1} folder(s) counted.", Activity.FileCount, Activity.FolderCount), MessageType.Information);
+
+				if (Activity.ByteCount > targetDrive.AvailableFreeSpace)
+				{
+					WriteMessage(string.Format("Syncrhoniszation failed from \"{0}\" to \"{1}\" because the available space to the target is less than the source size.", SourcePath, TargetPath), MessageType.Warning);
+
+					return;
+				}
+
+				WriteMessage(string.Format("Analysing the files and folders."), MessageType.Information);
 
 				StartTime = DateTime.Now;
 
@@ -828,26 +762,21 @@ namespace Mnemosyne.Desktop.ViewModels
 				timer.Dispose();
 
 				EndTime = DateTime.Now;
+				
+				WriteMessage(string.Format("Files and folders analysed."), MessageType.Information);
 
-				var message6 = string.Format("Files and folders analysed.");
-				Output = message6;
-				Trace.TraceInformation(message6);
-				Trace.Flush();
-
-				var message7 = string.Empty;
+				var endMessage = string.Empty;
 
 				if (cancellationTokenSource.IsCancellationRequested)
-					message7 = string.Format("Syncrhoniszation cancelled from \"{0}\" to \"{1}\".", SourcePath, TargetPath);
+					endMessage = string.Format("Syncrhoniszation cancelled from \"{0}\" to \"{1}\".", SourcePath, TargetPath);
 				else
-					message7 = string.Format("Syncrhoniszation finished from \"{0}\" to \"{1}\".", SourcePath, TargetPath); ;
+					endMessage = string.Format("Syncrhoniszation finished from \"{0}\" to \"{1}\".", SourcePath, TargetPath); ;
 
 				cancellationTokenSource.Dispose();
 
 				IsRunning = false;
 
-				Output = message7;
-				Trace.TraceInformation(message7);
-				Trace.Flush();
+				WriteMessage(endMessage, MessageType.Information);
 			}
 
 			await Task.Run(main);

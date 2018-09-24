@@ -95,11 +95,13 @@
     <Compile Include="Helpers\OctetToMebioctetConverter.cs" />
     <Compile Include="Helpers\DateTimeToStringConverter.cs" />
     <Compile Include="Helpers\FontSize.cs" />
+    <Compile Include="ViewModels\ActivityViewModel.cs" />
+    <Compile Include="ViewModels\LogViewModel.cs" />
     <Compile Include="ViewModels\ProfileViewModel.cs" />
     <Compile Include="ViewModels\CommonViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
-    <Compile Include="ViewModels\AddingViewModel.cs" />
-    <Compile Include="ViewModels\VisualizationViewModel.cs" />
+    <Compile Include="ViewModels\ProfileAddingViewModel.cs" />
+    <Compile Include="ViewModels\ProfileVisualizationViewModel.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -108,14 +110,17 @@
     <Compile Include="Helpers\PathToFileNameConverter.cs" />
     <Compile Include="Helpers\RelayAction.cs" />
     <Compile Include="Views\CommonView.xaml.cs" />
+    <Compile Include="Views\LogView.xaml.cs">
+      <DependentUpon>LogView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\MainView.xaml.cs">
       <DependentUpon>MainView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\AddingView.xaml.cs">
       <DependentUpon>AddingView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\VisualizationView.xaml.cs">
-      <DependentUpon>VisualizationView.xaml</DependentUpon>
+    <Compile Include="Views\ProfileVisualizationView.xaml.cs">
+      <DependentUpon>ProfileVisualizationView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +167,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\LogView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\MainView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -170,7 +179,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\VisualizationView.xaml">
+    <Page Include="Views\ProfileVisualizationView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

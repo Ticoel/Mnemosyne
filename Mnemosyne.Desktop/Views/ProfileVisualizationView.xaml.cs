@@ -5,15 +5,15 @@ using System.Windows.Controls;
 
 namespace Mnemosyne.Desktop.Views
 {
-	public partial class VisualizationView : Window
+	public partial class ProfileVisualizationView : Window
     {
-		private VisualizationViewModel visualizationViewModel;
+		private ProfileVisualizationViewModel visualizationViewModel;
 
-        public VisualizationView(string sourcePath, ProfileViewModel profil)
+        public ProfileVisualizationView(string sourcePath, ProfileViewModel profil)
         {
             InitializeComponent();
 
-			visualizationViewModel = ((VisualizationViewModel)DataContext);
+			visualizationViewModel = ((ProfileVisualizationViewModel)DataContext);
 
 			visualizationViewModel.SourcePath = sourcePath;
 			visualizationViewModel.Profile = profil;

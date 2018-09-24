@@ -21,7 +21,7 @@ namespace Mnemosyne.Desktop
 			var stream = new FileStream(logFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 			stream.Position = stream.Length;
 
-			Trace.Listeners.Add(new TextWriterTraceListener(stream));
+			Trace.Listeners.Add(new TextWriterTraceListener(stream, "log"));
 
 			Startup += App_Startup;
 			Exit += App_Exit;
